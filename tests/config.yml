@@ -14,7 +14,7 @@ spec:
       host: 127.0.0.1
       port: 9092
   review:
-    bibucket:
+    bitbucket:
     gerrit:
       host: 127.0.0.1
       port: 8080

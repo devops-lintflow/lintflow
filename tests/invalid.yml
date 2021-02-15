@@ -8,7 +8,7 @@ spec:
     lintkernel
     lintlang
   review:
-    bibucket
+    bitbucket
     gerrit
     gitee
     github
