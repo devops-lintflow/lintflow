@@ -4,12 +4,22 @@ metadata:
   name: lintflow
 spec:
   lint:
-    lintaosp
-    lintkernel
-    lintlang
+    - name: lintaosp
+      host: 127.0.0.1
+      port: 9090
+    - name: lintkernel
+      host: 127.0.0.1
+      port: 9091
+    - name: lintlang
+      host: 127.0.0.1
+      port: 9092
   review:
-    bitbucket
-    gerrit
-    gitee
-    github
-    gitlab
+    - name: gerrit
+      host: 127.0.0.1
+      port: 8080
+      user: name
+      pass: pass
+      vote:
+        - label: Verified
+          approval: +1
+          disapproval

@@ -26,7 +26,10 @@ import (
 
 var (
 	app        = kingpin.New("lintflow", "Lint Flow").Version(config.Version + "-build-" + config.Build)
+	_          = app.Flag("code-review", "Code review (bitbucket|gerrit|gitee|github|gitlab)").Required().String()
+	_          = app.Flag("commit-hash", "Commit hash (SHA-1)").Required().String()
 	configFile = app.Flag("config-file", "Config file (.yml)").Required().String()
+	_          = app.Flag("output-file", "Output file (.json|.txt|.xlsx)").Default().String()
 )
 
 func Run() {

@@ -37,7 +37,7 @@ make build
 ## Run
 
 ```bash
-./lintflow --config-file="config.yml"
+./lintflow --config-file="config.yml" --code-review="gerrit" --commit-hash="{hash}" --output-file="output.json"
 ```
 
 
@@ -49,7 +49,7 @@ git clone https://github.com/craftslab/lintflow.git
 
 cd lintflow
 docker build --no-cache -f Dockerfile -t craftslab/lintflow:latest .
-docker run -it craftslab/lintflow:latest ./bin/lintflow --config-file="./etc/config.yml"
+docker run -it -v /tmp:/tmp craftslab/lintflow:latest ./bin/lintflow --config-file="./etc/config.yml" --code-review="gerrit" --commit-hash="{hash}" --output-file="/tmp/output.json"
 ```
 
 
@@ -57,7 +57,18 @@ docker run -it craftslab/lintflow:latest ./bin/lintflow --config-file="./etc/con
 ## Usage
 
 ```
-TBD
+usage: lintflow --code-review=CODE-REVIEW --commit-hash=COMMIT-HASH --config-file=CONFIG-FILE [<flags>]
+
+Lint Flow
+
+Flags:
+  --help                     Show context-sensitive help (also try --help-long
+                             and --help-man).
+  --version                  Show application version.
+  --code-review=CODE-REVIEW  Code review (bitbucket|gerrit|gitee|github|gitlab)
+  --commit-hash=COMMIT-HASH  Commit hash (SHA-1)
+  --config-file=CONFIG-FILE  Config file (.yml)
+  --output-file=OUTPUT-FILE  Output file (.json|.txt|.xlsx)
 ```
 
 
@@ -75,25 +86,25 @@ metadata:
   name: lintflow
 spec:
   lint:
-    lintaosp:
+    - name: lintaosp
       host: 127.0.0.1
       port: 9090
-    lintkernel:
+    - name: lintkernel
       host: 127.0.0.1
       port: 9091
-    lintlang:
+    - name: lintlang
       host: 127.0.0.1
       port: 9092
   review:
-    bitbucket:
-    gerrit:
+    - name: gerrit
       host: 127.0.0.1
       port: 8080
-      user:
-      pass:
-    gitee:
-    github:
-    gitlab:
+      user: name
+      pass: pass
+      vote:
+        - label: Verified
+          approval: +1
+          disapproval: -1
 ```
 
 

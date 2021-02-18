@@ -24,6 +24,29 @@ type MetaData struct {
 }
 
 type Spec struct {
+	Lint   []Lint   `yaml:"lint"`
+	Review []Review `yaml:"review"`
+}
+
+type Lint struct {
+	Host string `yaml:"host"`
+	Name string `yaml:"name"`
+	Port uint64 `yaml:"port"`
+}
+
+type Review struct {
+	Host string `yaml:"host"`
+	Name string `yaml:"name"`
+	Pass string `yaml:"pass"`
+	Port uint64 `yaml:"port"`
+	User string `yaml:"user"`
+	Vote []Vote `yaml:"vote"`
+}
+
+type Vote struct {
+	Approval    string `yaml:"approval"`
+	Disapproval string `yaml:"disapproval"`
+	Label       string `yaml:"label"`
 }
 
 var (
