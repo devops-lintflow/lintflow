@@ -99,7 +99,7 @@ spec:
     - name: gerrit
       host: 127.0.0.1
       port: 8080
-      user: name
+      user: user
       pass: pass
       vote:
         - label: Verified
