@@ -13,6 +13,7 @@
 package cmd
 
 import (
+	"context"
 	"io/ioutil"
 	"log"
 	"os"
@@ -22,14 +23,18 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/craftslab/lintflow/config"
+	"github.com/craftslab/lintflow/flow"
+	"github.com/craftslab/lintflow/lint"
+	"github.com/craftslab/lintflow/printer"
+	"github.com/craftslab/lintflow/review"
 )
 
 var (
 	app        = kingpin.New("lintflow", "Lint Flow").Version(config.Version + "-build-" + config.Build)
-	_          = app.Flag("code-review", "Code review (bitbucket|gerrit|gitee|github|gitlab)").Required().String()
-	_          = app.Flag("commit-hash", "Commit hash (SHA-1)").Required().String()
+	codeReview = app.Flag("code-review", "Code review (bitbucket|gerrit|gitee|github|gitlab)").Required().String()
+	commitHash = app.Flag("commit-hash", "Commit hash (SHA-1)").Required().String()
 	configFile = app.Flag("config-file", "Config file (.yml)").Required().String()
-	_          = app.Flag("output-file", "Output file (.json|.txt|.xlsx)").Default().String()
+	outputFile = app.Flag("output-file", "Output file (.json|.txt|.xlsx)").Default().String()
 )
 
 func Run() {
@@ -40,9 +45,24 @@ func Run() {
 		log.Fatalf("failed to init config: %v", err)
 	}
 
+	r, err := initReview(c)
+	if err != nil {
+		log.Fatalf("failed to init review: %v", err)
+	}
+
+	l, err := initLint(c)
+	if err != nil {
+		log.Fatalf("failed to init lint: %v", err)
+	}
+
+	p, err := initPrinter(c)
+	if err != nil {
+		log.Fatalf("failed to init printer: %v", err)
+	}
+
 	log.Println("flow running")
 
-	if err := runFlow(c); err != nil {
+	if err := runFlow(c, r, l, p); err != nil {
 		log.Fatalf("failed to run flow: %v", err)
 	}
 
@@ -76,6 +96,59 @@ func initConfig(name string) (*config.Config, error) {
 	return c, nil
 }
 
-func runFlow(_ *config.Config) error {
-	return nil
+func initReview(cfg *config.Config) (review.Review, error) {
+	c := review.DefaultConfig()
+	if c == nil {
+		return nil, errors.New("failed to config")
+	}
+
+	c.Hash = *commitHash
+	c.Name = *codeReview
+	c.Reviews = cfg.Spec.Review
+
+	return review.New(c), nil
+}
+
+func initLint(cfg *config.Config) (lint.Lint, error) {
+	c := lint.DefaultConfig()
+	if c == nil {
+		return nil, errors.New("failed to config")
+	}
+
+	c.Lints = cfg.Spec.Lint
+
+	return lint.New(c), nil
+}
+
+func initPrinter(cfg *config.Config) (printer.Printer, error) {
+	c := printer.DefaultConfig()
+	if c == nil {
+		return nil, errors.New("failed to config")
+	}
+
+	c.Name = *outputFile
+
+	return printer.New(c), nil
+}
+
+func runFlow(_ *config.Config, r review.Review, l lint.Lint, p printer.Printer) error {
+	c := flow.DefaultConfig()
+	if c == nil {
+		return errors.New("failed to config")
+	}
+
+	c.Lint = l
+	c.Review = r
+
+	f := flow.New(context.Background(), c)
+	if f == nil {
+		return errors.New("failed to new")
+	}
+
+	buf, err := f.Run()
+	if err == nil {
+		err = p.Run(buf)
+	}
+
+	return err
 }

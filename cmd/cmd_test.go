@@ -30,3 +30,27 @@ func TestInitConfig(t *testing.T) {
 	_, err = initConfig("../tests/config.yml")
 	assert.Equal(t, nil, err)
 }
+
+func TestInitReview(t *testing.T) {
+	c, err := initConfig("../tests/config.yml")
+	assert.Equal(t, nil, err)
+
+	_, err = initReview(c)
+	assert.Equal(t, nil, err)
+}
+
+func TestInitLint(t *testing.T) {
+	c, err := initConfig("../tests/config.yml")
+	assert.Equal(t, nil, err)
+
+	_, err = initLint(c)
+	assert.Equal(t, nil, err)
+}
+
+func TestInitPrinter(t *testing.T) {
+	c, err := initConfig("../tests/config.yml")
+	assert.Equal(t, nil, err)
+
+	_, err = initPrinter(c)
+	assert.Equal(t, nil, err)
+}
