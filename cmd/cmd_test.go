@@ -47,10 +47,10 @@ func TestInitLint(t *testing.T) {
 	assert.Equal(t, nil, err)
 }
 
-func TestInitPrinter(t *testing.T) {
+func TestInitWriter(t *testing.T) {
 	c, err := initConfig("../tests/config.yml")
 	assert.Equal(t, nil, err)
 
-	_, err = initPrinter(c)
+	_, err = initWriter(c)
 	assert.Equal(t, nil, err)
 }

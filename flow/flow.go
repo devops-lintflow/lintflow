@@ -15,9 +15,12 @@ package flow
 import (
 	"context"
 
+	"github.com/pkg/errors"
+
 	"github.com/craftslab/lintflow/lint"
 	"github.com/craftslab/lintflow/proto"
 	"github.com/craftslab/lintflow/review"
+	"github.com/craftslab/lintflow/runtime"
 )
 
 type Flow interface {
@@ -30,12 +33,12 @@ type Config struct {
 }
 
 type flow struct {
-	config *Config
+	cfg *Config
 }
 
-func New(_ context.Context, config *Config) Flow {
+func New(_ context.Context, cfg *Config) Flow {
 	return &flow{
-		config: config,
+		cfg: cfg,
 	}
 }
 
@@ -44,5 +47,42 @@ func DefaultConfig() *Config {
 }
 
 func (f *flow) Run() ([]proto.Format, error) {
-	return nil, nil
+	project, err := f.cfg.Review.Init()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to init review")
+	}
+
+	bufLint, err := f.cfg.Lint.Run(project)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to run lint")
+	}
+
+	bufRuntime := make([]interface{}, len(bufLint))
+	for index, val := range bufLint {
+		bufRuntime[index] = val
+	}
+
+	retRuntime, err := runtime.Run(f.routine, bufRuntime)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to run runtime")
+	}
+
+	bufReview := make([]proto.Format, len(retRuntime))
+	for index, val := range retRuntime {
+		bufReview[index] = val.(proto.Format)
+	}
+
+	if err := f.cfg.Review.Run(bufReview); err != nil {
+		return nil, errors.Wrap(err, "failed to run review")
+	}
+
+	if err := f.cfg.Review.Deinit(project); err != nil {
+		return nil, errors.Wrap(err, "failed to deinit review")
+	}
+
+	return bufReview, nil
+}
+
+func (f *flow) routine(data interface{}) interface{} {
+	return nil
 }

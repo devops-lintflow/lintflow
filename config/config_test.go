@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNew(t *testing.T) {
+func TestConfig(t *testing.T) {
 	cfg := New()
 	assert.NotEqual(t, nil, cfg)
 }

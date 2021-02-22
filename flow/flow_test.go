@@ -20,7 +20,7 @@ import (
 
 func TestFlow(t *testing.T) {
 	_ = &flow{
-		config: DefaultConfig(),
+		cfg: DefaultConfig(),
 	}
 
 	assert.Equal(t, nil, nil)

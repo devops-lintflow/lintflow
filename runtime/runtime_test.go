@@ -10,25 +10,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package proto
+package runtime
 
-// Prototype
-// {
-//   "file": "name",
-//   "line": 1,
-//   "type": "Error",
-//   "details": "text"
-// }
+import (
+	"testing"
 
-const (
-	TYPE_ERROR = "Error"
-	TYPE_INFO  = "Info"
-	TYPE_WARN  = "Warning"
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/goleak"
 )
 
-type Format struct {
-	File    string `json:"file"`
-	Line    int    `json:"line"`
-	Type    string `json:"type"`
-	Details string `json:"details"`
+func TestRunRuntime(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
+	op := func(req interface{}) interface{} {
+		return nil
+	}
+
+	var req []interface{}
+
+	_, err := Run(op, req)
+	assert.Equal(t, nil, err)
 }

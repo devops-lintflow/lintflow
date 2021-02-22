@@ -17,7 +17,7 @@ import (
 )
 
 type Lint interface {
-	Run() error
+	Run(name string) ([]string, error)
 }
 
 type Config struct {
@@ -38,6 +38,6 @@ func DefaultConfig() *Config {
 	return &Config{}
 }
 
-func (l *lint) Run() error {
-	return nil
+func (l *lint) Run(name string) ([]string, error) {
+	return nil, nil
 }

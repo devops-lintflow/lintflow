@@ -10,34 +10,4 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package printer
-
-import (
-	"github.com/craftslab/lintflow/proto"
-)
-
-type Printer interface {
-	Run([]proto.Format) error
-}
-
-type Config struct {
-	Name string
-}
-
-type printer struct {
-	config *Config
-}
-
-func New(config *Config) Printer {
-	return &printer{
-		config: config,
-	}
-}
-
-func DefaultConfig() *Config {
-	return &Config{}
-}
-
-func (p *printer) Run([]proto.Format) error {
-	return nil
-}
+package review

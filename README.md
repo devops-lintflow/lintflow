@@ -102,7 +102,7 @@ spec:
       user: user
       pass: pass
       vote:
-        - label: Verified
+        - label: Code-Review
           approval: +1
           disapproval: -1
 ```

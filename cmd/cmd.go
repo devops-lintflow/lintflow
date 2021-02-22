@@ -25,8 +25,8 @@ import (
 	"github.com/craftslab/lintflow/config"
 	"github.com/craftslab/lintflow/flow"
 	"github.com/craftslab/lintflow/lint"
-	"github.com/craftslab/lintflow/printer"
 	"github.com/craftslab/lintflow/review"
+	"github.com/craftslab/lintflow/writer"
 )
 
 var (
@@ -55,14 +55,14 @@ func Run() {
 		log.Fatalf("failed to init lint: %v", err)
 	}
 
-	p, err := initPrinter(c)
+	w, err := initWriter(c)
 	if err != nil {
-		log.Fatalf("failed to init printer: %v", err)
+		log.Fatalf("failed to init writer: %v", err)
 	}
 
 	log.Println("flow running")
 
-	if err := runFlow(c, r, l, p); err != nil {
+	if err := runFlow(c, r, l, w); err != nil {
 		log.Fatalf("failed to run flow: %v", err)
 	}
 
@@ -120,21 +120,25 @@ func initLint(cfg *config.Config) (lint.Lint, error) {
 	return lint.New(c), nil
 }
 
-func initPrinter(cfg *config.Config) (printer.Printer, error) {
-	c := printer.DefaultConfig()
+func initWriter(cfg *config.Config) (writer.Writer, error) {
+	c := writer.DefaultConfig()
 	if c == nil {
 		return nil, errors.New("failed to config")
 	}
 
+	if _, err := os.Stat(*outputFile); err == nil {
+		return nil, errors.New("file already exists")
+	}
+
 	c.Name = *outputFile
 
-	return printer.New(c), nil
+	return writer.New(c), nil
 }
 
-func runFlow(_ *config.Config, r review.Review, l lint.Lint, p printer.Printer) error {
+func runFlow(_ *config.Config, r review.Review, l lint.Lint, w writer.Writer) error {
 	c := flow.DefaultConfig()
 	if c == nil {
-		return errors.New("failed to config")
+		return errors.New("failed to config flow")
 	}
 
 	c.Lint = l
@@ -142,13 +146,19 @@ func runFlow(_ *config.Config, r review.Review, l lint.Lint, p printer.Printer) 
 
 	f := flow.New(context.Background(), c)
 	if f == nil {
-		return errors.New("failed to new")
+		return errors.New("failed to new flow")
 	}
 
 	buf, err := f.Run()
-	if err == nil {
-		err = p.Run(buf)
+	if err != nil {
+		return errors.New("failed to run flow")
 	}
 
-	return err
+	if len(buf) != 0 {
+		if err = w.Run(buf); err != nil {
+			return errors.New("failed to run writer")
+		}
+	}
+
+	return nil
 }

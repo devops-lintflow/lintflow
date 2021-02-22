@@ -10,18 +10,4 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package printer
-
-import (
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-)
-
-func TestPrinter(t *testing.T) {
-	_ = &printer{
-		config: DefaultConfig(),
-	}
-
-	assert.Equal(t, nil, nil)
-}
+package review

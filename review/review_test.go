@@ -16,12 +16,76 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/craftslab/lintflow/config"
+	"github.com/craftslab/lintflow/proto"
+)
+
+const (
+	HASH_GERRIT = "0d43a7ec2377edeacc016878595229ca377c80f1"
+)
+
+const (
+	NAME_GERRIT  = "gerrit"
+	NAME_INVALID = "invalid"
 )
 
 func TestReview(t *testing.T) {
-	_ = &review{
+	r := &review{
 		cfg: DefaultConfig(),
 	}
 
-	assert.Equal(t, nil, nil)
+	vote := make([]config.Vote, 1)
+	vote[0] = config.Vote{
+		Approval:    "+1",
+		Disapproval: "-1",
+		Label:       "Code-Review",
+	}
+
+	r.cfg.Reviews = make([]config.Review, 1)
+	r.cfg.Reviews[0] = config.Review{
+		Host: "127.0.0.1",
+		Name: NAME_GERRIT,
+		Pass: "D/uccEPCcItsY3Cti4unrkS/zsyW65MZBrEsiHiXpg",
+		Port: 8080,
+		User: "admin",
+		Vote: vote,
+	}
+
+	r.cfg.Hash = ""
+	r.cfg.Name = NAME_INVALID
+
+	_, err := r.Init()
+	assert.NotEqual(t, nil, err)
+
+	r.cfg.Hash = HASH_GERRIT
+	r.cfg.Name = NAME_INVALID
+
+	_, err = r.Init()
+	assert.NotEqual(t, nil, err)
+
+	r.cfg.Hash = HASH_GERRIT
+	r.cfg.Name = NAME_GERRIT
+
+	project, err := r.Init()
+	assert.Equal(t, nil, err)
+
+	buf := make([]proto.Format, 0)
+
+	err = r.Run(buf)
+	assert.Equal(t, nil, err)
+
+	buf = make([]proto.Format, 1)
+	buf[0] = proto.Format{
+		Details: "Disapproved",
+		File:    "AndroidManifest.xml",
+		Line:    1,
+		Type:    proto.TYPE_ERROR,
+	}
+
+	err = r.Run(buf)
+	assert.Equal(t, nil, err)
+
+	err = r.Deinit(project)
+	assert.Equal(t, nil, err)
 }

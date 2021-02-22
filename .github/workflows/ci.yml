@@ -49,6 +49,8 @@ jobs:
           key: ${{ runner.os }}-go-${{ matrix.golang }}-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-${{ matrix.golang }}-
+      - name: Install review
+        run: make review
       - name: Run tests
         run: make test
         continue-on-error: false

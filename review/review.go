@@ -14,10 +14,13 @@ package review
 
 import (
 	"github.com/craftslab/lintflow/config"
+	"github.com/craftslab/lintflow/proto"
 )
 
 type Review interface {
-	Run() error
+	Init() (string, error)
+	Run([]proto.Format) error
+	Deinit(string) error
 }
 
 type Config struct {
@@ -40,6 +43,14 @@ func DefaultConfig() *Config {
 	return &Config{}
 }
 
-func (r *review) Run() error {
+func (r *review) Init() (string, error) {
+	return "", nil
+}
+
+func (r *review) Run(data []proto.Format) error {
+	return nil
+}
+
+func (r *review) Deinit(name string) error {
 	return nil
 }

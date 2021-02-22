@@ -19,6 +19,9 @@ lint: go-lint
 proto: go-proto
 .PHONY: proto
 
+review: go-review
+.PHONY: review
+
 test: go-test
 .PHONY: test
 
@@ -36,6 +39,9 @@ go-lint: FORCE
 
 go-proto: FORCE
 	./script/proto.sh
+
+go-review: FORCE
+	./script/review.sh
 
 go-test: FORCE
 	./script/test.sh
