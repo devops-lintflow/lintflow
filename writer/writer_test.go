@@ -25,7 +25,7 @@ var (
 	fileContent = proto.Format{
 		File:    "name",
 		Line:    1,
-		Type:    proto.TYPE_ERROR,
+		Type:    proto.TypeError,
 		Details: "text",
 	}
 )

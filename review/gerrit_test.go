@@ -22,11 +22,6 @@ import (
 	"github.com/craftslab/lintflow/proto"
 )
 
-const (
-	change = 1
-	commit = "1d9225835b2763cad85685162a0a4f00cf05c6ae"
-)
-
 func initHandle(t *testing.T) gerrit {
 	c, err := initConfig("../tests/config.yml")
 	assert.Equal(t, nil, err)
@@ -35,7 +30,7 @@ func initHandle(t *testing.T) gerrit {
 
 	for _, item := range c.Spec.Review {
 		if item.Name == "gerrit" {
-			g.review = item
+			g.r = item
 			break
 		}
 	}
@@ -58,14 +53,14 @@ func TestFetch(t *testing.T) {
 	_, err = h.Fetch("invalid")
 	assert.NotEqual(t, nil, err)
 
-	name, err := h.Fetch(COMMIT_GERRIT)
+	name, err := h.Fetch(commitGerrit)
 	assert.Equal(t, nil, err)
 
-	if _, e := os.Stat(filepath.Join(name, proto.STORE_PATCH)); os.IsNotExist(e) {
+	if _, e := os.Stat(filepath.Join(name, proto.StorePatch)); os.IsNotExist(e) {
 		assert.NotEqual(t, nil, e)
 	}
 
-	if _, e := os.Stat(filepath.Join(name, proto.STORE_SOURCE)); os.IsNotExist(e) {
+	if _, e := os.Stat(filepath.Join(name, proto.StoreSource)); os.IsNotExist(e) {
 		assert.NotEqual(t, nil, e)
 	}
 
@@ -84,13 +79,8 @@ func TestGet(t *testing.T) {
 	_, err := h.get(-1)
 	assert.NotEqual(t, nil, err)
 
-	_, err = h.get(change)
+	_, err = h.get(changeGerrit)
 	assert.Equal(t, nil, err)
-}
-
-func TestPut(t *testing.T) {
-	// TODO
-	assert.Equal(t, nil, nil)
 }
 
 func TestQuery(t *testing.T) {
@@ -99,6 +89,31 @@ func TestQuery(t *testing.T) {
 	_, err := h.query("commit:-1", 0)
 	assert.NotEqual(t, nil, err)
 
-	_, err = h.query("commit:"+commit, 0)
+	_, err = h.query("commit:"+commitGerrit, 0)
+	assert.Equal(t, nil, err)
+}
+
+func TestReviewGerrit(t *testing.T) {
+	h := initHandle(t)
+
+	err := h.review(-1, -1, []byte{})
+	assert.NotEqual(t, nil, err)
+
+	buf := []byte(`{
+		"message": "Voting Code-Review by lintflow",
+		"labels": {
+			"Code-Review": -1
+		},
+		"comments": {
+			"AndroidManifest.xml": [
+				{
+					"line": 1,
+					"message": "Commented by lintflow"
+				}
+			]
+		}
+	}`)
+
+	err = h.review(changeGerrit, revisionGerrit, buf)
 	assert.Equal(t, nil, err)
 }

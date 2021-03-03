@@ -26,7 +26,9 @@ import (
 )
 
 const (
-	COMMIT_GERRIT = "1d9225835b2763cad85685162a0a4f00cf05c6ae"
+	changeGerrit   = 21
+	commitGerrit   = "6c7447ffad57d13f7f2657a302dd176cff453c80"
+	revisionGerrit = 1
 )
 
 const (
@@ -74,12 +76,12 @@ func TestReview(t *testing.T) {
 	_, err = r.Fetch("")
 	assert.NotEqual(t, nil, err)
 
-	name, err := r.Fetch(COMMIT_GERRIT)
+	name, err := r.Fetch(commitGerrit)
 	assert.Equal(t, nil, err)
 
 	buf := make([]proto.Format, 0)
 
-	err = r.Vote(COMMIT_GERRIT, buf)
+	err = r.Vote(commitGerrit, buf)
 	assert.Equal(t, nil, err)
 
 	buf = make([]proto.Format, 1)
@@ -87,10 +89,10 @@ func TestReview(t *testing.T) {
 		Details: "Disapproved",
 		File:    "AndroidManifest.xml",
 		Line:    1,
-		Type:    proto.TYPE_ERROR,
+		Type:    proto.TypeError,
 	}
 
-	err = r.Vote(COMMIT_GERRIT, buf)
+	err = r.Vote(commitGerrit, buf)
 	assert.Equal(t, nil, err)
 
 	err = r.Clean(name)

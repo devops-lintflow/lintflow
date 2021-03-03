@@ -13,21 +13,21 @@
 package review
 
 import (
+	"bytes"
 	"encoding/json"
+	"github.com/pkg/errors"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
 
-	"github.com/pkg/errors"
-
 	"github.com/craftslab/lintflow/config"
 	"github.com/craftslab/lintflow/proto"
 )
 
 type gerrit struct {
-	review config.Review
+	r config.Review
 }
 
 func (g *gerrit) Clean(name string) error {
@@ -44,12 +44,12 @@ func (g *gerrit) Fetch(commit string) (string, error) {
 		return "", errors.Wrap(err, "failed to tempdir")
 	}
 
-	patch := filepath.Join(name, proto.STORE_PATCH)
+	patch := filepath.Join(name, proto.StorePatch)
 	if err := os.Mkdir(patch, os.ModePerm); err != nil {
 		return "", errors.Wrap(err, "failed to make patch")
 	}
 
-	source := filepath.Join(name, proto.STORE_SOURCE)
+	source := filepath.Join(name, proto.StoreSource)
 	if err := os.Mkdir(source, os.ModePerm); err != nil {
 		return "", errors.Wrap(err, "failed to make source")
 	}
@@ -64,10 +64,10 @@ func (g *gerrit) Vote(commit string, data []proto.Format) error {
 	return nil
 }
 
-func (g *gerrit) get(id int) (map[string]interface{}, error) {
-	_url := g.review.Host + ":" + strconv.Itoa(g.review.Port) + "/changes/" + strconv.Itoa(id) + "/detail"
-	if g.review.User != "" && g.review.Pass != "" {
-		_url = g.review.Host + ":" + strconv.Itoa(g.review.Port) + "/a/changes/" + strconv.Itoa(id) + "/detail"
+func (g *gerrit) get(change int) (map[string]interface{}, error) {
+	_url := g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/changes/" + strconv.Itoa(change) + "/detail"
+	if g.r.User != "" && g.r.Pass != "" {
+		_url = g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/a/changes/" + strconv.Itoa(change) + "/detail"
 	}
 
 	req, err := http.NewRequest(http.MethodGet, _url, nil)
@@ -75,24 +75,24 @@ func (g *gerrit) get(id int) (map[string]interface{}, error) {
 		return nil, errors.Wrap(err, "failed to request")
 	}
 
-	if g.review.User != "" && g.review.Pass != "" {
-		req.SetBasicAuth(g.review.User, g.review.Pass)
+	if g.r.User != "" && g.r.Pass != "" {
+		req.SetBasicAuth(g.r.User, g.r.Pass)
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	rsp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to do")
 	}
 
 	defer func() {
-		_ = resp.Body.Close()
+		_ = rsp.Body.Close()
 	}()
 
-	if resp.StatusCode != http.StatusOK {
+	if rsp.StatusCode != http.StatusOK {
 		return nil, errors.New("invalid status")
 	}
 
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := ioutil.ReadAll(rsp.Body)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read")
 	}
@@ -106,15 +106,10 @@ func (g *gerrit) get(id int) (map[string]interface{}, error) {
 	return buf, nil
 }
 
-func (g *gerrit) put(id int) error {
-	// TODO
-	return nil
-}
-
 func (g *gerrit) query(search string, start int) (map[string]interface{}, error) {
-	_url := g.review.Host + ":" + strconv.Itoa(g.review.Port) + "/changes/"
-	if g.review.User != "" && g.review.Pass != "" {
-		_url = g.review.Host + ":" + strconv.Itoa(g.review.Port) + "/a/changes/"
+	_url := g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/changes/"
+	if g.r.User != "" && g.r.Pass != "" {
+		_url = g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/a/changes/"
 	}
 
 	req, err := http.NewRequest(http.MethodGet, _url, nil)
@@ -122,8 +117,8 @@ func (g *gerrit) query(search string, start int) (map[string]interface{}, error)
 		return nil, errors.Wrap(err, "failed to request")
 	}
 
-	if g.review.User != "" && g.review.Pass != "" {
-		req.SetBasicAuth(g.review.User, g.review.Pass)
+	if g.r.User != "" && g.r.Pass != "" {
+		req.SetBasicAuth(g.r.User, g.r.Pass)
 	}
 
 	q := req.URL.Query()
@@ -132,20 +127,20 @@ func (g *gerrit) query(search string, start int) (map[string]interface{}, error)
 	q.Add("start", strconv.Itoa(start))
 	req.URL.RawQuery = q.Encode()
 
-	resp, err := http.DefaultClient.Do(req)
+	rsp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to do")
 	}
 
 	defer func() {
-		_ = resp.Body.Close()
+		_ = rsp.Body.Close()
 	}()
 
-	if resp.StatusCode != http.StatusOK {
+	if rsp.StatusCode != http.StatusOK {
 		return nil, errors.New("invalid status")
 	}
 
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := ioutil.ReadAll(rsp.Body)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read")
 	}
@@ -161,4 +156,44 @@ func (g *gerrit) query(search string, start int) (map[string]interface{}, error)
 	}
 
 	return buf[0], nil
+}
+
+func (g *gerrit) review(change, revision int, data []byte) error {
+	_url := g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/changes/" + strconv.Itoa(change) +
+		"/revisions/" + strconv.Itoa(revision) + "/review"
+	if g.r.User != "" && g.r.Pass != "" {
+		_url = g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/a/changes/" + strconv.Itoa(change) +
+			"/revisions/" + strconv.Itoa(revision) + "/review"
+	}
+
+	req, err := http.NewRequest(http.MethodPost, _url, bytes.NewBuffer(data))
+	if err != nil {
+		return errors.Wrap(err, "failed to request")
+	}
+
+	req.Header.Set("Content-Type", "application/json;charset=utf-8")
+
+	if g.r.User != "" && g.r.Pass != "" {
+		req.SetBasicAuth(g.r.User, g.r.Pass)
+	}
+
+	rsp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return errors.Wrap(err, "failed to do")
+	}
+
+	defer func() {
+		_ = rsp.Body.Close()
+	}()
+
+	if rsp.StatusCode != http.StatusOK {
+		return errors.New("invalid status")
+	}
+
+	_, err = ioutil.ReadAll(rsp.Body)
+	if err != nil {
+		return errors.Wrap(err, "failed to read")
+	}
+
+	return nil
 }

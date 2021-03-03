@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	SEP = ","
+	sep = ","
 )
 
 var (
@@ -101,7 +101,7 @@ func (w *writer) writeTxt() error {
 		for i := 0; i < r.NumField(); i++ {
 			h = append(h, r.Field(i).Tag.Get("json"))
 		}
-		buf = append(buf, strings.Join(h, SEP))
+		buf = append(buf, strings.Join(h, sep))
 
 		for _, val := range w.data {
 			var c []string
@@ -115,7 +115,7 @@ func (w *writer) writeTxt() error {
 					c = append(c, strconv.FormatInt(f.Int(), 10))
 				}
 			}
-			buf = append(buf, strings.Join(c, SEP))
+			buf = append(buf, strings.Join(c, sep))
 		}
 
 		return buf

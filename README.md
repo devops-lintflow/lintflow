@@ -105,6 +105,7 @@ spec:
         - label: Code-Review
           approval: +1
           disapproval: -1
+          message: Voting Code-Review by lintflow
 ```
 
 
@@ -122,6 +123,16 @@ Project License can be found [here](LICENSE).
 
 
 ## Reference
+
+### Gerrit
+
+- [get-change-detail](https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#get-change-detail)
+- [query-changes](https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#query-changes)
+- [set-review](https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#set-review)
+
+
+
+### Misc
 
 - [gRPC](https://grpc.io/docs/languages/go/)
 - [protocol-buffers](https://developers.google.com/protocol-buffers/docs/proto3)

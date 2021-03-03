@@ -22,4 +22,5 @@ spec:
       vote:
         - label: Code-Review
           approval: +1
-          disapproval
+          disapproval: -1
+          message

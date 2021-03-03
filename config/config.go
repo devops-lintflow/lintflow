@@ -47,6 +47,7 @@ type Vote struct {
 	Approval    string `yaml:"approval"`
 	Disapproval string `yaml:"disapproval"`
 	Label       string `yaml:"label"`
+	Message     string `yaml:"message"`
 }
 
 var (

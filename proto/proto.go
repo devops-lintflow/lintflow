@@ -21,14 +21,14 @@ package proto
 // }
 
 const (
-	STORE_PATCH  = "patch"
-	STORE_SOURCE = "source"
+	StorePatch  = "patch"
+	StoreSource = "source"
 )
 
 const (
-	TYPE_ERROR = "Error"
-	TYPE_INFO  = "Info"
-	TYPE_WARN  = "Warning"
+	TypeError = "Error"
+	TypeInfo  = "Info"
+	TypeWarn  = "Warning"
 )
 
 type Format struct {
