@@ -27,13 +27,8 @@ import (
 
 const (
 	changeGerrit   = 21
-	commitGerrit   = "6c7447ffad57d13f7f2657a302dd176cff453c80"
-	revisionGerrit = 1
-)
-
-const (
-	NAME_GERRIT  = "gerrit"
-	NAME_INVALID = "invalid"
+	commitGerrit   = "6395e74a1d0041b088d57b58b397d247034669ca"
+	revisionGerrit = 2
 )
 
 func initConfig(name string) (*config.Config, error) {
@@ -68,7 +63,7 @@ func TestReview(t *testing.T) {
 	assert.Equal(t, nil, err)
 
 	cfg := DefaultConfig()
-	cfg.Name = NAME_GERRIT
+	cfg.Name = reviewGerrit
 	cfg.Reviews = c.Spec.Review
 
 	r := New(cfg)

@@ -19,6 +19,10 @@ import (
 	"github.com/craftslab/lintflow/proto"
 )
 
+const (
+	reviewGerrit = "gerrit"
+)
+
 type Review interface {
 	Clean(string) error
 	Fetch(string) (string, error)
@@ -37,8 +41,11 @@ type review struct {
 
 func New(cfg *Config) Review {
 	reviews := map[string]Review{}
-	for _, item := range cfg.Reviews {
-		reviews[item.Name] = &gerrit{item}
+
+	for index := range cfg.Reviews {
+		if cfg.Reviews[index].Name == reviewGerrit {
+			reviews[cfg.Reviews[index].Name] = &gerrit{cfg.Reviews[index]}
+		}
 	}
 
 	h, p := reviews[cfg.Name]

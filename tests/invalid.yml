@@ -20,7 +20,7 @@ spec:
       user: user
       pass: pass
       vote:
-        - label: Code-Review
-          approval: +1
-          disapproval: -1
-          message
+        approval: +1
+        disapproval: -1
+        label: Code-Review
+        message

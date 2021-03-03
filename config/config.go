@@ -40,7 +40,7 @@ type Review struct {
 	Pass string `yaml:"pass"`
 	Port int    `yaml:"port"`
 	User string `yaml:"user"`
-	Vote []Vote `yaml:"vote"`
+	Vote Vote   `yaml:"vote"`
 }
 
 type Vote struct {

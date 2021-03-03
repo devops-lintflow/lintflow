@@ -15,12 +15,13 @@ package review
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/pkg/errors"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
+
+	"github.com/pkg/errors"
 
 	"github.com/craftslab/lintflow/config"
 	"github.com/craftslab/lintflow/proto"
@@ -62,7 +63,37 @@ func (g *gerrit) Fetch(commit string) (string, error) {
 }
 
 func (g *gerrit) Vote(commit string, data []proto.Format) error {
-	// TODO
+	helper := func() (map[string]interface{}, map[string]interface{}, string) {
+		if len(data) == 0 {
+			return nil, map[string]interface{}{g.r.Vote.Label: g.r.Vote.Approval}, g.r.Vote.Message
+		}
+		c := map[string]interface{}{}
+		for _, item := range data {
+			b := map[string]interface{}{"line": item.Line, "message": item.Details}
+			if _, p := c[item.File]; !p {
+				c[item.File] = []map[string]interface{}{b}
+			} else {
+				c[item.File] = append(c[item.File].([]map[string]interface{}), b)
+			}
+		}
+		return c, map[string]interface{}{g.r.Vote.Label: g.r.Vote.Disapproval}, g.r.Vote.Message
+	}
+
+	result, err := g.query("commit:"+commit, 0)
+	if err != nil {
+		return errors.Wrap(err, "failed to query")
+	}
+
+	revisions := result["revisions"].(map[string]interface{})
+	current := revisions[result["current_revision"].(string)].(map[string]interface{})
+
+	comments, labels, message := helper()
+	buf := map[string]interface{}{"comments": comments, "labels": labels, "message": message}
+
+	if err := g.review(int(result["_number"].(float64)), int(current["_number"].(float64)), buf); err != nil {
+		return errors.Wrap(err, "failed to review")
+	}
+
 	return nil
 }
 
@@ -160,7 +191,7 @@ func (g *gerrit) query(search string, start int) (map[string]interface{}, error)
 	return buf[0], nil
 }
 
-func (g *gerrit) review(change, revision int, data []byte) error {
+func (g *gerrit) review(change, revision int, data map[string]interface{}) error {
 	_url := g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/changes/" + strconv.Itoa(change) +
 		"/revisions/" + strconv.Itoa(revision) + "/review"
 	if g.r.User != "" && g.r.Pass != "" {
@@ -168,7 +199,12 @@ func (g *gerrit) review(change, revision int, data []byte) error {
 			"/revisions/" + strconv.Itoa(revision) + "/review"
 	}
 
-	req, err := http.NewRequest(http.MethodPost, _url, bytes.NewBuffer(data))
+	buf, err := json.Marshal(data)
+	if err != nil {
+		return errors.Wrap(err, "failed to marshal")
+	}
+
+	req, err := http.NewRequest(http.MethodPost, _url, bytes.NewBuffer(buf))
 	if err != nil {
 		return errors.Wrap(err, "failed to request")
 	}

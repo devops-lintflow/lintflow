@@ -102,10 +102,10 @@ spec:
       user: user
       pass: pass
       vote:
-        - label: Code-Review
-          approval: +1
-          disapproval: -1
-          message: Voting Code-Review by lintflow
+        approval: +1
+        disapproval: -1
+        label: Code-Review
+        message: Voting Code-Review by lintflow
 ```
 
 

@@ -28,9 +28,9 @@ func initHandle(t *testing.T) gerrit {
 
 	var g gerrit
 
-	for _, item := range c.Spec.Review {
-		if item.Name == "gerrit" {
-			g.r = item
+	for index := range c.Spec.Review {
+		if c.Spec.Review[index].Name == "gerrit" {
+			g.r = c.Spec.Review[index]
 			break
 		}
 	}
@@ -74,8 +74,26 @@ func TestFetch(t *testing.T) {
 }
 
 func TestVote(t *testing.T) {
-	// TODO
-	assert.Equal(t, nil, nil)
+	h := initHandle(t)
+
+	buf := make([]proto.Format, 0)
+
+	err := h.Vote("", buf)
+	assert.NotEqual(t, nil, err)
+
+	err = h.Vote(commitGerrit, buf)
+	assert.Equal(t, nil, err)
+
+	buf = make([]proto.Format, 1)
+	buf[0] = proto.Format{
+		Details: "Disapproved",
+		File:    "AndroidManifest.xml",
+		Line:    1,
+		Type:    proto.TypeError,
+	}
+
+	err = h.Vote(commitGerrit, buf)
+	assert.Equal(t, nil, err)
 }
 
 func TestGet(t *testing.T) {
@@ -101,23 +119,23 @@ func TestQuery(t *testing.T) {
 func TestReviewGerrit(t *testing.T) {
 	h := initHandle(t)
 
-	err := h.review(-1, -1, []byte{})
+	err := h.review(-1, -1, nil)
 	assert.NotEqual(t, nil, err)
 
-	buf := []byte(`{
-		"message": "Voting Code-Review by lintflow",
-		"labels": {
-			"Code-Review": -1
-		},
-		"comments": {
-			"AndroidManifest.xml": [
+	buf := map[string]interface{}{
+		"comments": map[string]interface{}{
+			"AndroidManifest.xml": []map[string]interface{}{
 				{
-					"line": 1,
-					"message": "Commented by lintflow"
-				}
-			]
-		}
-	}`)
+					"line":    1,
+					"message": "Commented by lintflow",
+				},
+			},
+		},
+		"labels": map[string]interface{}{
+			"Code-Review": -1,
+		},
+		"message": "Voting Code-Review by lintflow",
+	}
 
 	err = h.review(changeGerrit, revisionGerrit, buf)
 	assert.Equal(t, nil, err)
