@@ -27,8 +27,8 @@ import (
 
 const (
 	changeGerrit   = 21
-	commitGerrit   = "6395e74a1d0041b088d57b58b397d247034669ca"
-	revisionGerrit = 2
+	commitGerrit   = "c5d3440911e06ed4fc60252bd89e7756f9ae67ee"
+	revisionGerrit = 3
 )
 
 func initConfig(name string) (*config.Config, error) {
@@ -67,9 +67,6 @@ func TestReview(t *testing.T) {
 	cfg.Reviews = c.Spec.Review
 
 	r := New(cfg)
-
-	_, err = r.Fetch("")
-	assert.NotEqual(t, nil, err)
 
 	name, err := r.Fetch(commitGerrit)
 	assert.Equal(t, nil, err)

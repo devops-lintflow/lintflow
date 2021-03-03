@@ -52,12 +52,6 @@ func TestClean(t *testing.T) {
 func TestFetch(t *testing.T) {
 	h := initHandle(t)
 
-	_, err := h.Fetch("")
-	assert.NotEqual(t, nil, err)
-
-	_, err = h.Fetch("invalid")
-	assert.NotEqual(t, nil, err)
-
 	name, err := h.Fetch(commitGerrit)
 	assert.Equal(t, nil, err)
 
