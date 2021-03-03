@@ -102,7 +102,6 @@ func initReview(cfg *config.Config) (review.Review, error) {
 		return nil, errors.New("failed to config")
 	}
 
-	c.Hash = *commitHash
 	c.Name = *codeReview
 	c.Reviews = cfg.Spec.Review
 
@@ -149,7 +148,7 @@ func runFlow(_ *config.Config, r review.Review, l lint.Lint, w writer.Writer) er
 		return errors.New("failed to new flow")
 	}
 
-	buf, err := f.Run()
+	buf, err := f.Run(*commitHash)
 	if err != nil {
 		return errors.New("failed to run flow")
 	}

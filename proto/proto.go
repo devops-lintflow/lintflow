@@ -21,6 +21,11 @@ package proto
 // }
 
 const (
+	STORE_PATCH  = "patch"
+	STORE_SOURCE = "source"
+)
+
+const (
 	TYPE_ERROR = "Error"
 	TYPE_INFO  = "Info"
 	TYPE_WARN  = "Warning"

@@ -13,11 +13,12 @@
 package writer
 
 import (
-	"github.com/craftslab/lintflow/proto"
 	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/craftslab/lintflow/proto"
 )
 
 var (

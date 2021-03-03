@@ -24,7 +24,7 @@ import (
 )
 
 type Flow interface {
-	Run() ([]proto.Format, error)
+	Run(string) ([]proto.Format, error)
 }
 
 type Config struct {
@@ -46,15 +46,15 @@ func DefaultConfig() *Config {
 	return &Config{}
 }
 
-func (f *flow) Run() ([]proto.Format, error) {
-	project, err := f.cfg.Review.Init()
+func (f *flow) Run(commit string) ([]proto.Format, error) {
+	name, err := f.cfg.Review.Fetch(commit)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to init review")
+		return nil, errors.Wrap(err, "failed to fetch")
 	}
 
-	bufLint, err := f.cfg.Lint.Run(project)
+	bufLint, err := f.cfg.Lint.Run(name)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to run lint")
+		return nil, errors.Wrap(err, "failed to lint")
 	}
 
 	bufRuntime := make([]interface{}, len(bufLint))
@@ -64,7 +64,7 @@ func (f *flow) Run() ([]proto.Format, error) {
 
 	retRuntime, err := runtime.Run(f.routine, bufRuntime)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to run runtime")
+		return nil, errors.Wrap(err, "failed to run")
 	}
 
 	bufReview := make([]proto.Format, len(retRuntime))
@@ -72,17 +72,18 @@ func (f *flow) Run() ([]proto.Format, error) {
 		bufReview[index] = val.(proto.Format)
 	}
 
-	if err := f.cfg.Review.Run(bufReview); err != nil {
-		return nil, errors.Wrap(err, "failed to run review")
+	if err := f.cfg.Review.Vote(commit, bufReview); err != nil {
+		return nil, errors.Wrap(err, "failed to vote")
 	}
 
-	if err := f.cfg.Review.Deinit(project); err != nil {
-		return nil, errors.Wrap(err, "failed to deinit review")
+	if err := f.cfg.Review.Clean(name); err != nil {
+		return nil, errors.Wrap(err, "failed to clean")
 	}
 
 	return bufReview, nil
 }
 
 func (f *flow) routine(data interface{}) interface{} {
+	// TODO
 	return nil
 }

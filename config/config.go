@@ -31,14 +31,14 @@ type Spec struct {
 type Lint struct {
 	Host string `yaml:"host"`
 	Name string `yaml:"name"`
-	Port uint64 `yaml:"port"`
+	Port int    `yaml:"port"`
 }
 
 type Review struct {
 	Host string `yaml:"host"`
 	Name string `yaml:"name"`
 	Pass string `yaml:"pass"`
-	Port uint64 `yaml:"port"`
+	Port int    `yaml:"port"`
 	User string `yaml:"user"`
 	Vote []Vote `yaml:"vote"`
 }

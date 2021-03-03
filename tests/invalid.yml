@@ -15,11 +15,11 @@ spec:
       port: 9092
   review:
     - name: gerrit
-      host: 127.0.0.1
+      host: http://127.0.0.1
       port: 8080
-      user: admin
-      pass
+      user: user
+      pass: pass
       vote:
         - label: Code-Review
           approval: +1
-          disapproval: -1
+          disapproval

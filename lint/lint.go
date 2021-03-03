@@ -39,5 +39,6 @@ func DefaultConfig() *Config {
 }
 
 func (l *lint) Run(name string) ([]string, error) {
+	// TODO
 	return nil, nil
 }

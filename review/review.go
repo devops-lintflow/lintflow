@@ -13,29 +13,42 @@
 package review
 
 import (
+	"github.com/pkg/errors"
+
 	"github.com/craftslab/lintflow/config"
 	"github.com/craftslab/lintflow/proto"
 )
 
 type Review interface {
-	Init() (string, error)
-	Run([]proto.Format) error
-	Deinit(string) error
+	Clean(string) error
+	Fetch(string) (string, error)
+	Vote(string, []proto.Format) error
 }
 
 type Config struct {
-	Hash    string
 	Name    string
 	Reviews []config.Review
 }
 
 type review struct {
 	cfg *Config
+	hdl Review
 }
 
 func New(cfg *Config) Review {
+	reviews := map[string]Review{}
+	for _, item := range cfg.Reviews {
+		reviews[item.Name] = &gerrit{item}
+	}
+
+	h, p := reviews[cfg.Name]
+	if !p {
+		h = nil
+	}
+
 	return &review{
 		cfg: cfg,
+		hdl: h,
 	}
 }
 
@@ -43,14 +56,39 @@ func DefaultConfig() *Config {
 	return &Config{}
 }
 
-func (r *review) Init() (string, error) {
-	return "", nil
-}
+func (r *review) Clean(name string) error {
+	if r.hdl == nil {
+		return errors.New("invalid handle")
+	}
 
-func (r *review) Run(data []proto.Format) error {
+	if err := r.hdl.Clean(name); err != nil {
+		return errors.Wrap(err, "failed to clean")
+	}
+
 	return nil
 }
 
-func (r *review) Deinit(name string) error {
+func (r *review) Fetch(commit string) (string, error) {
+	if r.hdl == nil {
+		return "", errors.New("invalid handle")
+	}
+
+	buf, err := r.hdl.Fetch(commit)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to fetch")
+	}
+
+	return buf, nil
+}
+
+func (r *review) Vote(commit string, data []proto.Format) error {
+	if r.hdl == nil {
+		return errors.New("invalid handle")
+	}
+
+	if err := r.hdl.Vote(commit, data); err != nil {
+		return errors.Wrap(err, "failed to vote")
+	}
+
 	return nil
 }

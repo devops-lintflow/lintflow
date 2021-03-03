@@ -13,6 +13,10 @@
 package review
 
 import (
+	"github.com/pkg/errors"
+	"gopkg.in/yaml.v3"
+	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -22,7 +26,7 @@ import (
 )
 
 const (
-	HASH_GERRIT = "0d43a7ec2377edeacc016878595229ca377c80f1"
+	COMMIT_GERRIT = "1d9225835b2763cad85685162a0a4f00cf05c6ae"
 )
 
 const (
@@ -30,49 +34,52 @@ const (
 	NAME_INVALID = "invalid"
 )
 
+func initConfig(name string) (*config.Config, error) {
+	c := config.New()
+	if c == nil {
+		return &config.Config{}, errors.New("failed to new")
+	}
+
+	fi, err := os.Open(name)
+	if err != nil {
+		return c, errors.Wrap(err, "failed to open")
+	}
+
+	defer func() {
+		_ = fi.Close()
+	}()
+
+	buf, err := ioutil.ReadAll(fi)
+	if err != nil {
+		return c, errors.Wrap(err, "failed to readall")
+	}
+
+	if err := yaml.Unmarshal(buf, c); err != nil {
+		return c, errors.Wrap(err, "failed to unmarshal")
+	}
+
+	return c, nil
+}
+
 func TestReview(t *testing.T) {
-	r := &review{
-		cfg: DefaultConfig(),
-	}
+	c, err := initConfig("../tests/config.yml")
+	assert.Equal(t, nil, err)
 
-	vote := make([]config.Vote, 1)
-	vote[0] = config.Vote{
-		Approval:    "+1",
-		Disapproval: "-1",
-		Label:       "Code-Review",
-	}
+	cfg := DefaultConfig()
+	cfg.Name = NAME_GERRIT
+	cfg.Reviews = c.Spec.Review
 
-	r.cfg.Reviews = make([]config.Review, 1)
-	r.cfg.Reviews[0] = config.Review{
-		Host: "127.0.0.1",
-		Name: NAME_GERRIT,
-		Pass: "D/uccEPCcItsY3Cti4unrkS/zsyW65MZBrEsiHiXpg",
-		Port: 8080,
-		User: "admin",
-		Vote: vote,
-	}
+	r := New(cfg)
 
-	r.cfg.Hash = ""
-	r.cfg.Name = NAME_INVALID
-
-	_, err := r.Init()
+	_, err = r.Fetch("")
 	assert.NotEqual(t, nil, err)
 
-	r.cfg.Hash = HASH_GERRIT
-	r.cfg.Name = NAME_INVALID
-
-	_, err = r.Init()
-	assert.NotEqual(t, nil, err)
-
-	r.cfg.Hash = HASH_GERRIT
-	r.cfg.Name = NAME_GERRIT
-
-	project, err := r.Init()
+	name, err := r.Fetch(COMMIT_GERRIT)
 	assert.Equal(t, nil, err)
 
 	buf := make([]proto.Format, 0)
 
-	err = r.Run(buf)
+	err = r.Vote(COMMIT_GERRIT, buf)
 	assert.Equal(t, nil, err)
 
 	buf = make([]proto.Format, 1)
@@ -83,9 +90,9 @@ func TestReview(t *testing.T) {
 		Type:    proto.TYPE_ERROR,
 	}
 
-	err = r.Run(buf)
+	err = r.Vote(COMMIT_GERRIT, buf)
 	assert.Equal(t, nil, err)
 
-	err = r.Deinit(project)
+	err = r.Clean(name)
 	assert.Equal(t, nil, err)
 }
