@@ -39,8 +39,13 @@ func initHandle(t *testing.T) gerrit {
 }
 
 func TestClean(t *testing.T) {
+	dir, _ := os.Getwd()
+	name := filepath.Join(dir, "gerrit-"+commitGerrit)
+	err := os.Mkdir(name, os.ModePerm)
+	assert.Equal(t, nil, err)
+
 	h := initHandle(t)
-	err := h.Clean(os.TempDir())
+	err = h.Clean(name)
 	assert.Equal(t, nil, err)
 }
 

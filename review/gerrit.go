@@ -39,19 +39,21 @@ func (g *gerrit) Clean(name string) error {
 }
 
 func (g *gerrit) Fetch(commit string) (string, error) {
-	name, err := ioutil.TempDir(os.TempDir(), "*"+"-gerrit-"+commit)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to tempdir")
+	dir, _ := os.Getwd()
+
+	name := filepath.Join(dir, "gerrit-"+commit)
+	if err := os.Mkdir(name, os.ModePerm); err != nil {
+		return "", errors.Wrap(err, "failed to make "+name)
 	}
 
 	patch := filepath.Join(name, proto.StorePatch)
 	if err := os.Mkdir(patch, os.ModePerm); err != nil {
-		return "", errors.Wrap(err, "failed to make patch")
+		return "", errors.Wrap(err, "failed to make "+patch)
 	}
 
 	source := filepath.Join(name, proto.StoreSource)
 	if err := os.Mkdir(source, os.ModePerm); err != nil {
-		return "", errors.Wrap(err, "failed to make source")
+		return "", errors.Wrap(err, "failed to make "+source)
 	}
 
 	// TODO
