@@ -13,13 +13,17 @@
 package review
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -40,26 +44,82 @@ func (g *gerrit) Clean(name string) error {
 }
 
 func (g *gerrit) Fetch(commit string) (string, error) {
-	dir, _ := os.Getwd()
-
-	n := filepath.Join(dir, "gerrit-"+commit)
-	if err := os.Mkdir(n, os.ModePerm); err != nil {
-		return "", errors.Wrap(err, "failed to make "+n)
+	helper := func(dir, file, data string) error {
+		if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+			return errors.Wrap(err, "failed to mkdir")
+		}
+		f, err := os.Create(filepath.Join(dir, file))
+		if err != nil {
+			return errors.Wrap(err, "failed to create")
+		}
+		defer func() {
+			_ = f.Close()
+		}()
+		b := bufio.NewWriter(f)
+		if _, err := b.WriteString(data); err != nil {
+			return errors.Wrap(err, "failed to write")
+		}
+		defer func() {
+			_ = b.Flush()
+		}()
+		return nil
 	}
 
-	p := filepath.Join(n, proto.StorePatch)
-	if err := os.Mkdir(p, os.ModePerm); err != nil {
-		return "", errors.Wrap(err, "failed to make "+p)
+	// Set root
+	d, err := os.Getwd()
+	if err != nil {
+		return "", errors.Wrap(err, "failed to getwd")
 	}
 
-	s := filepath.Join(n, proto.StoreSource)
-	if err := os.Mkdir(s, os.ModePerm); err != nil {
-		return "", errors.Wrap(err, "failed to make "+s)
+	t := time.Now()
+	root := filepath.Join(d, "gerrit-"+t.Format("2006-01-02"))
+
+	// Query commit
+	r, err := g.get(g.urlQuery("commit:"+commit, []string{"CURRENT_FILES", "CURRENT_REVISION"}, 0))
+	if err != nil {
+		return "", errors.Wrap(err, "failed to query")
 	}
 
-	// TODO
+	ret, err := g.unmarshalList(r)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to unmarshal")
+	}
 
-	return n, nil
+	revisions := ret["revisions"].(map[string]interface{})
+	current := revisions[ret["current_revision"].(string)].(map[string]interface{})
+
+	changeNum := int(ret["_number"].(float64))
+	revisionNum := int(current["_number"].(float64))
+
+	// Get patch
+	buf, err := g.get(g.urlPatch(changeNum, revisionNum))
+	if err != nil {
+		return "", errors.Wrap(err, "failed to patch")
+	}
+
+	err = helper(filepath.Join(root, strconv.Itoa(changeNum), ret["current_revision"].(string)),
+		proto.Base64Patch, string(buf))
+	if err != nil {
+		return "", errors.Wrap(err, "failed to fetch")
+	}
+
+	// Get content
+	files := current["files"].(map[string]interface{})
+
+	for key := range files {
+		buf, err := g.get(g.urlContent(changeNum, revisionNum, key))
+		if err != nil {
+			return "", errors.Wrap(err, "failed to content")
+		}
+
+		err = helper(filepath.Join(root, strconv.Itoa(changeNum), ret["current_revision"].(string), filepath.Dir(key)),
+			filepath.Base(key)+proto.Base64Content, string(buf))
+		if err != nil {
+			return "", errors.Wrap(err, "failed to fetch")
+		}
+	}
+
+	return root, nil
 }
 
 func (g *gerrit) Vote(commit string, data []proto.Format) error {
@@ -79,7 +139,7 @@ func (g *gerrit) Vote(commit string, data []proto.Format) error {
 		return c, map[string]interface{}{g.r.Vote.Label: g.r.Vote.Disapproval}, g.r.Vote.Message
 	}
 
-	r, err := g.get(g.urlQuery("commit:"+commit, "CURRENT_REVISION", 0))
+	r, err := g.get(g.urlQuery("commit:"+commit, []string{"CURRENT_REVISION"}, 0))
 	if err != nil {
 		return errors.Wrap(err, "failed to query")
 	}
@@ -128,11 +188,11 @@ func (g *gerrit) unmarshalList(data []byte) (map[string]interface{}, error) {
 
 func (g *gerrit) urlContent(change, revision int, name string) string {
 	buf := g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/changes/" + strconv.Itoa(change) +
-		"/revisions/" + strconv.Itoa(revision) + "/files/" + name + "/content"
+		"/revisions/" + strconv.Itoa(revision) + "/files/" + url.PathEscape(name) + "/content"
 
 	if g.r.User != "" && g.r.Pass != "" {
 		buf = g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/a/changes/" + strconv.Itoa(change) +
-			"/revisions/" + strconv.Itoa(revision) + "/files/" + name + "/content"
+			"/revisions/" + strconv.Itoa(revision) + "/files/" + url.PathEscape(name) + "/content"
 	}
 
 	return buf
@@ -160,8 +220,8 @@ func (g *gerrit) urlPatch(change, revision int) string {
 	return buf
 }
 
-func (g *gerrit) urlQuery(search, option string, start int) string {
-	query := "?q=" + search + "&o=" + option + "&n=" + strconv.Itoa(start)
+func (g *gerrit) urlQuery(search string, option []string, start int) string {
+	query := "?q=" + search + "&o=" + strings.Join(option, "&o=") + "&n=" + strconv.Itoa(start)
 
 	buf := g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/changes/" + query
 	if g.r.User != "" && g.r.Pass != "" {
@@ -183,8 +243,8 @@ func (g *gerrit) urlReview(change, revision int) string {
 	return buf
 }
 
-func (g *gerrit) get(url string) ([]byte, error) {
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+func (g *gerrit) get(_url string) ([]byte, error) {
+	req, err := http.NewRequest(http.MethodGet, _url, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to request")
 	}
@@ -214,13 +274,13 @@ func (g *gerrit) get(url string) ([]byte, error) {
 	return data, nil
 }
 
-func (g *gerrit) post(url string, data map[string]interface{}) error {
+func (g *gerrit) post(_url string, data map[string]interface{}) error {
 	buf, err := json.Marshal(data)
 	if err != nil {
 		return errors.Wrap(err, "failed to marshal")
 	}
 
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(buf))
+	req, err := http.NewRequest(http.MethodPost, _url, bytes.NewBuffer(buf))
 	if err != nil {
 		return errors.Wrap(err, "failed to request")
 	}

@@ -18,6 +18,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -41,8 +42,9 @@ func initHandle(t *testing.T) gerrit {
 }
 
 func TestClean(t *testing.T) {
-	dir, _ := os.Getwd()
-	name := filepath.Join(dir, "gerrit-"+commitGerrit)
+	d, _ := os.Getwd()
+	tnow := time.Now()
+	name := filepath.Join(d, "gerrit-"+tnow.Format("2006-01-02"))
 	err := os.Mkdir(name, os.ModePerm)
 	assert.Equal(t, nil, err)
 
@@ -56,14 +58,6 @@ func TestFetch(t *testing.T) {
 
 	name, err := h.Fetch(commitGerrit)
 	assert.Equal(t, nil, err)
-
-	if _, e := os.Stat(filepath.Join(name, proto.StorePatch)); os.IsNotExist(e) {
-		assert.NotEqual(t, nil, e)
-	}
-
-	if _, e := os.Stat(filepath.Join(name, proto.StoreSource)); os.IsNotExist(e) {
-		assert.NotEqual(t, nil, e)
-	}
 
 	err = h.Clean(name)
 	assert.Equal(t, nil, err)
@@ -136,10 +130,10 @@ func TestGetPatch(t *testing.T) {
 func TestGetQuery(t *testing.T) {
 	h := initHandle(t)
 
-	_, err := h.get(h.urlQuery("commit:-1", "CURRENT_REVISION", 0))
+	_, err := h.get(h.urlQuery("commit:-1", []string{"CURRENT_REVISION"}, 0))
 	assert.NotEqual(t, nil, err)
 
-	buf, err := h.get(h.urlQuery("commit:"+commitGerrit, "CURRENT_REVISION", 0))
+	buf, err := h.get(h.urlQuery("commit:"+commitGerrit, []string{"CURRENT_REVISION"}, 0))
 	assert.Equal(t, nil, err)
 
 	_, err = h.unmarshalList(buf)

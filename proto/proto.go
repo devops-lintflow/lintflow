@@ -21,8 +21,8 @@ package proto
 // }
 
 const (
-	StorePatch  = "patch"
-	StoreSource = "source"
+	Base64Content = ".base64"
+	Base64Patch   = "diff.base64"
 )
 
 const (
