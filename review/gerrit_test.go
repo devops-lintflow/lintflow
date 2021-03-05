@@ -13,6 +13,7 @@
 package review
 
 import (
+	"encoding/base64"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -97,13 +98,13 @@ func TestContent(t *testing.T) {
 	_, err := h.content(-1, -1, "")
 	assert.NotEqual(t, nil, err)
 
-	n := "AndroidManifest.xml"
-	_, err = h.content(changeGerrit, revisionGerrit, url.PathEscape(n))
+	name := "AndroidManifest.xml"
+	buf, err := h.content(changeGerrit, revisionGerrit, url.PathEscape(name))
 	assert.Equal(t, nil, err)
 
-	n = "src/com/android/settings/ActivityPicker.java"
-	_, err = h.content(changeGerrit, revisionGerrit, url.PathEscape(n))
-	assert.Equal(t, nil, err)
+	dst := make([]byte, len(buf))
+	n, _ := base64.StdEncoding.Decode(dst, buf)
+	assert.NotEqual(t, 0, n)
 }
 
 func TestDetail(t *testing.T) {
@@ -122,8 +123,12 @@ func TestPatch(t *testing.T) {
 	_, err := h.patch(-1, -1)
 	assert.NotEqual(t, nil, err)
 
-	_, err = h.patch(changeGerrit, revisionGerrit)
+	buf, err := h.patch(changeGerrit, revisionGerrit)
 	assert.Equal(t, nil, err)
+
+	dst := make([]byte, len(buf))
+	n, _ := base64.StdEncoding.Decode(dst, buf)
+	assert.NotEqual(t, 0, n)
 }
 
 func TestQuery(t *testing.T) {

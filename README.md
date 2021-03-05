@@ -126,8 +126,8 @@ Project License can be found [here](LICENSE).
 
 ### Gerrit
 
-- [download-content](https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#download-content)
 - [get-change-detail](https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#get-change-detail)
+- [get-content](https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#get-content)
 - [get-patch](https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#get-patch)
 - [query-changes](https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#query-changes)
 - [set-review](https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#set-review)

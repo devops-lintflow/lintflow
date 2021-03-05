@@ -99,10 +99,10 @@ func (g *gerrit) Vote(commit string, data []proto.Format) error {
 
 func (g *gerrit) content(change, revision int, name string) ([]byte, error) {
 	_url := g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/changes/" + strconv.Itoa(change) +
-		"/revisions/" + strconv.Itoa(revision) + "/files/" + name + "/download"
+		"/revisions/" + strconv.Itoa(revision) + "/files/" + name + "/content"
 	if g.r.User != "" && g.r.Pass != "" {
 		_url = g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/a/changes/" + strconv.Itoa(change) +
-			"/revisions/" + strconv.Itoa(revision) + "/files/" + name + "/download"
+			"/revisions/" + strconv.Itoa(revision) + "/files/" + name + "/content"
 	}
 
 	req, err := http.NewRequest(http.MethodGet, _url, nil)
