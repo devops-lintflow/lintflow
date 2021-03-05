@@ -42,24 +42,24 @@ func (g *gerrit) Clean(name string) error {
 func (g *gerrit) Fetch(commit string) (string, error) {
 	dir, _ := os.Getwd()
 
-	name := filepath.Join(dir, "gerrit-"+commit)
-	if err := os.Mkdir(name, os.ModePerm); err != nil {
-		return "", errors.Wrap(err, "failed to make "+name)
+	n := filepath.Join(dir, "gerrit-"+commit)
+	if err := os.Mkdir(n, os.ModePerm); err != nil {
+		return "", errors.Wrap(err, "failed to make "+n)
 	}
 
-	patch := filepath.Join(name, proto.StorePatch)
-	if err := os.Mkdir(patch, os.ModePerm); err != nil {
-		return "", errors.Wrap(err, "failed to make "+patch)
+	p := filepath.Join(n, proto.StorePatch)
+	if err := os.Mkdir(p, os.ModePerm); err != nil {
+		return "", errors.Wrap(err, "failed to make "+p)
 	}
 
-	source := filepath.Join(name, proto.StoreSource)
-	if err := os.Mkdir(source, os.ModePerm); err != nil {
-		return "", errors.Wrap(err, "failed to make "+source)
+	s := filepath.Join(n, proto.StoreSource)
+	if err := os.Mkdir(s, os.ModePerm); err != nil {
+		return "", errors.Wrap(err, "failed to make "+s)
 	}
 
 	// TODO
 
-	return name, nil
+	return n, nil
 }
 
 func (g *gerrit) Vote(commit string, data []proto.Format) error {
@@ -97,7 +97,45 @@ func (g *gerrit) Vote(commit string, data []proto.Format) error {
 	return nil
 }
 
-func (g *gerrit) get(change int) (map[string]interface{}, error) {
+func (g *gerrit) content(change, revision int, name string) ([]byte, error) {
+	_url := g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/changes/" + strconv.Itoa(change) +
+		"/revisions/" + strconv.Itoa(revision) + "/files/" + name + "/download"
+	if g.r.User != "" && g.r.Pass != "" {
+		_url = g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/a/changes/" + strconv.Itoa(change) +
+			"/revisions/" + strconv.Itoa(revision) + "/files/" + name + "/download"
+	}
+
+	req, err := http.NewRequest(http.MethodGet, _url, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to request")
+	}
+
+	if g.r.User != "" && g.r.Pass != "" {
+		req.SetBasicAuth(g.r.User, g.r.Pass)
+	}
+
+	rsp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to do")
+	}
+
+	defer func() {
+		_ = rsp.Body.Close()
+	}()
+
+	if rsp.StatusCode != http.StatusOK {
+		return nil, errors.New("invalid status")
+	}
+
+	buf, err := ioutil.ReadAll(rsp.Body)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to read")
+	}
+
+	return buf, nil
+}
+
+func (g *gerrit) detail(change int) (map[string]interface{}, error) {
 	_url := g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/changes/" + strconv.Itoa(change) + "/detail"
 	if g.r.User != "" && g.r.Pass != "" {
 		_url = g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/a/changes/" + strconv.Itoa(change) + "/detail"
@@ -134,6 +172,44 @@ func (g *gerrit) get(change int) (map[string]interface{}, error) {
 
 	if err := json.Unmarshal(data[4:], &buf); err != nil {
 		return nil, errors.Wrap(err, "failed to unmarshal")
+	}
+
+	return buf, nil
+}
+
+func (g *gerrit) patch(change, revision int) ([]byte, error) {
+	_url := g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/changes/" + strconv.Itoa(change) +
+		"/revisions/" + strconv.Itoa(revision) + "/patch"
+	if g.r.User != "" && g.r.Pass != "" {
+		_url = g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/a/changes/" + strconv.Itoa(change) +
+			"/revisions/" + strconv.Itoa(revision) + "/patch"
+	}
+
+	req, err := http.NewRequest(http.MethodGet, _url, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to request")
+	}
+
+	if g.r.User != "" && g.r.Pass != "" {
+		req.SetBasicAuth(g.r.User, g.r.Pass)
+	}
+
+	rsp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to do")
+	}
+
+	defer func() {
+		_ = rsp.Body.Close()
+	}()
+
+	if rsp.StatusCode != http.StatusOK {
+		return nil, errors.New("invalid status")
+	}
+
+	buf, err := ioutil.ReadAll(rsp.Body)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to read")
 	}
 
 	return buf, nil

@@ -13,6 +13,7 @@
 package review
 
 import (
+	"net/url"
 	"os"
 	"path/filepath"
 	"testing"
@@ -90,13 +91,38 @@ func TestVote(t *testing.T) {
 	assert.Equal(t, nil, err)
 }
 
-func TestGet(t *testing.T) {
+func TestContent(t *testing.T) {
 	h := initHandle(t)
 
-	_, err := h.get(-1)
+	_, err := h.content(-1, -1, "")
 	assert.NotEqual(t, nil, err)
 
-	_, err = h.get(changeGerrit)
+	n := "AndroidManifest.xml"
+	_, err = h.content(changeGerrit, revisionGerrit, url.PathEscape(n))
+	assert.Equal(t, nil, err)
+
+	n = "src/com/android/settings/ActivityPicker.java"
+	_, err = h.content(changeGerrit, revisionGerrit, url.PathEscape(n))
+	assert.Equal(t, nil, err)
+}
+
+func TestDetail(t *testing.T) {
+	h := initHandle(t)
+
+	_, err := h.detail(-1)
+	assert.NotEqual(t, nil, err)
+
+	_, err = h.detail(changeGerrit)
+	assert.Equal(t, nil, err)
+}
+
+func TestPatch(t *testing.T) {
+	h := initHandle(t)
+
+	_, err := h.patch(-1, -1)
+	assert.NotEqual(t, nil, err)
+
+	_, err = h.patch(changeGerrit, revisionGerrit)
 	assert.Equal(t, nil, err)
 }
 
