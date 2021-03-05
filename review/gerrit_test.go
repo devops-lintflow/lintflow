@@ -92,14 +92,13 @@ func TestVote(t *testing.T) {
 	assert.Equal(t, nil, err)
 }
 
-func TestContent(t *testing.T) {
+func TestGetContent(t *testing.T) {
 	h := initHandle(t)
 
-	_, err := h.content(-1, -1, "")
+	_, err := h.get(h.urlContent(-1, -1, ""))
 	assert.NotEqual(t, nil, err)
 
-	name := "AndroidManifest.xml"
-	buf, err := h.content(changeGerrit, revisionGerrit, url.PathEscape(name))
+	buf, err := h.get(h.urlContent(changeGerrit, revisionGerrit, url.PathEscape("AndroidManifest.xml")))
 	assert.Equal(t, nil, err)
 
 	dst := make([]byte, len(buf))
@@ -107,23 +106,26 @@ func TestContent(t *testing.T) {
 	assert.NotEqual(t, 0, n)
 }
 
-func TestDetail(t *testing.T) {
+func TestGetDetail(t *testing.T) {
 	h := initHandle(t)
 
-	_, err := h.detail(-1)
+	_, err := h.get(h.urlDetail(-1))
 	assert.NotEqual(t, nil, err)
 
-	_, err = h.detail(changeGerrit)
+	buf, err := h.get(h.urlDetail(changeGerrit))
+	assert.Equal(t, nil, err)
+
+	_, err = h.unmarshal(buf)
 	assert.Equal(t, nil, err)
 }
 
-func TestPatch(t *testing.T) {
+func TestGetPatch(t *testing.T) {
 	h := initHandle(t)
 
-	_, err := h.patch(-1, -1)
+	_, err := h.get(h.urlPatch(-1, -1))
 	assert.NotEqual(t, nil, err)
 
-	buf, err := h.patch(changeGerrit, revisionGerrit)
+	buf, err := h.get(h.urlPatch(changeGerrit, revisionGerrit))
 	assert.Equal(t, nil, err)
 
 	dst := make([]byte, len(buf))
@@ -131,20 +133,23 @@ func TestPatch(t *testing.T) {
 	assert.NotEqual(t, 0, n)
 }
 
-func TestQuery(t *testing.T) {
+func TestGetQuery(t *testing.T) {
 	h := initHandle(t)
 
-	_, err := h.query("commit:-1", 0)
+	_, err := h.get(h.urlQuery("commit:-1", "CURRENT_REVISION", 0))
 	assert.NotEqual(t, nil, err)
 
-	_, err = h.query("commit:"+commitGerrit, 0)
+	buf, err := h.get(h.urlQuery("commit:"+commitGerrit, "CURRENT_REVISION", 0))
+	assert.Equal(t, nil, err)
+
+	_, err = h.unmarshalList(buf)
 	assert.Equal(t, nil, err)
 }
 
-func TestReviewGerrit(t *testing.T) {
+func TestPostReview(t *testing.T) {
 	h := initHandle(t)
 
-	err := h.review(-1, -1, nil)
+	err := h.post(h.urlReview(-1, -1), nil)
 	assert.NotEqual(t, nil, err)
 
 	buf := map[string]interface{}{
@@ -162,6 +167,6 @@ func TestReviewGerrit(t *testing.T) {
 		"message": "Voting Code-Review by lintflow",
 	}
 
-	err = h.review(changeGerrit, revisionGerrit, buf)
+	err = h.post(h.urlReview(changeGerrit, revisionGerrit), buf)
 	assert.Equal(t, nil, err)
 }

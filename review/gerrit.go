@@ -79,95 +79,30 @@ func (g *gerrit) Vote(commit string, data []proto.Format) error {
 		return c, map[string]interface{}{g.r.Vote.Label: g.r.Vote.Disapproval}, g.r.Vote.Message
 	}
 
-	result, err := g.query("commit:"+commit, 0)
+	r, err := g.get(g.urlQuery("commit:"+commit, "CURRENT_REVISION", 0))
 	if err != nil {
 		return errors.Wrap(err, "failed to query")
 	}
 
-	revisions := result["revisions"].(map[string]interface{})
-	current := revisions[result["current_revision"].(string)].(map[string]interface{})
+	ret, err := g.unmarshalList(r)
+	if err != nil {
+		return errors.Wrap(err, "failed to unmarshal")
+	}
+
+	revisions := ret["revisions"].(map[string]interface{})
+	current := revisions[ret["current_revision"].(string)].(map[string]interface{})
 
 	comments, labels, message := helper()
 	buf := map[string]interface{}{"comments": comments, "labels": labels, "message": message}
 
-	if err := g.review(int(result["_number"].(float64)), int(current["_number"].(float64)), buf); err != nil {
+	if err := g.post(g.urlReview(int(ret["_number"].(float64)), int(current["_number"].(float64))), buf); err != nil {
 		return errors.Wrap(err, "failed to review")
 	}
 
 	return nil
 }
 
-func (g *gerrit) content(change, revision int, name string) ([]byte, error) {
-	_url := g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/changes/" + strconv.Itoa(change) +
-		"/revisions/" + strconv.Itoa(revision) + "/files/" + name + "/content"
-	if g.r.User != "" && g.r.Pass != "" {
-		_url = g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/a/changes/" + strconv.Itoa(change) +
-			"/revisions/" + strconv.Itoa(revision) + "/files/" + name + "/content"
-	}
-
-	req, err := http.NewRequest(http.MethodGet, _url, nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to request")
-	}
-
-	if g.r.User != "" && g.r.Pass != "" {
-		req.SetBasicAuth(g.r.User, g.r.Pass)
-	}
-
-	rsp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to do")
-	}
-
-	defer func() {
-		_ = rsp.Body.Close()
-	}()
-
-	if rsp.StatusCode != http.StatusOK {
-		return nil, errors.New("invalid status")
-	}
-
-	buf, err := ioutil.ReadAll(rsp.Body)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to read")
-	}
-
-	return buf, nil
-}
-
-func (g *gerrit) detail(change int) (map[string]interface{}, error) {
-	_url := g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/changes/" + strconv.Itoa(change) + "/detail"
-	if g.r.User != "" && g.r.Pass != "" {
-		_url = g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/a/changes/" + strconv.Itoa(change) + "/detail"
-	}
-
-	req, err := http.NewRequest(http.MethodGet, _url, nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to request")
-	}
-
-	if g.r.User != "" && g.r.Pass != "" {
-		req.SetBasicAuth(g.r.User, g.r.Pass)
-	}
-
-	rsp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to do")
-	}
-
-	defer func() {
-		_ = rsp.Body.Close()
-	}()
-
-	if rsp.StatusCode != http.StatusOK {
-		return nil, errors.New("invalid status")
-	}
-
-	data, err := ioutil.ReadAll(rsp.Body)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to read")
-	}
-
+func (g *gerrit) unmarshal(data []byte) (map[string]interface{}, error) {
 	buf := map[string]interface{}{}
 
 	if err := json.Unmarshal(data[4:], &buf); err != nil {
@@ -177,84 +112,8 @@ func (g *gerrit) detail(change int) (map[string]interface{}, error) {
 	return buf, nil
 }
 
-func (g *gerrit) patch(change, revision int) ([]byte, error) {
-	_url := g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/changes/" + strconv.Itoa(change) +
-		"/revisions/" + strconv.Itoa(revision) + "/patch"
-	if g.r.User != "" && g.r.Pass != "" {
-		_url = g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/a/changes/" + strconv.Itoa(change) +
-			"/revisions/" + strconv.Itoa(revision) + "/patch"
-	}
-
-	req, err := http.NewRequest(http.MethodGet, _url, nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to request")
-	}
-
-	if g.r.User != "" && g.r.Pass != "" {
-		req.SetBasicAuth(g.r.User, g.r.Pass)
-	}
-
-	rsp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to do")
-	}
-
-	defer func() {
-		_ = rsp.Body.Close()
-	}()
-
-	if rsp.StatusCode != http.StatusOK {
-		return nil, errors.New("invalid status")
-	}
-
-	buf, err := ioutil.ReadAll(rsp.Body)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to read")
-	}
-
-	return buf, nil
-}
-
-func (g *gerrit) query(search string, start int) (map[string]interface{}, error) {
-	_url := g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/changes/"
-	if g.r.User != "" && g.r.Pass != "" {
-		_url = g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/a/changes/"
-	}
-
-	req, err := http.NewRequest(http.MethodGet, _url, nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to request")
-	}
-
-	if g.r.User != "" && g.r.Pass != "" {
-		req.SetBasicAuth(g.r.User, g.r.Pass)
-	}
-
-	q := req.URL.Query()
-	q.Add("o", "CURRENT_REVISION")
-	q.Add("q", search)
-	q.Add("start", strconv.Itoa(start))
-	req.URL.RawQuery = q.Encode()
-
-	rsp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to do")
-	}
-
-	defer func() {
-		_ = rsp.Body.Close()
-	}()
-
-	if rsp.StatusCode != http.StatusOK {
-		return nil, errors.New("invalid status")
-	}
-
-	data, err := ioutil.ReadAll(rsp.Body)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to read")
-	}
-
-	buf := []map[string]interface{}{}
+func (g *gerrit) unmarshalList(data []byte) (map[string]interface{}, error) {
+	var buf []map[string]interface{}
 
 	if err := json.Unmarshal(data[4:], &buf); err != nil {
 		return nil, errors.Wrap(err, "failed to unmarshal")
@@ -267,20 +126,101 @@ func (g *gerrit) query(search string, start int) (map[string]interface{}, error)
 	return buf[0], nil
 }
 
-func (g *gerrit) review(change, revision int, data map[string]interface{}) error {
-	_url := g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/changes/" + strconv.Itoa(change) +
-		"/revisions/" + strconv.Itoa(revision) + "/review"
+func (g *gerrit) urlContent(change, revision int, name string) string {
+	buf := g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/changes/" + strconv.Itoa(change) +
+		"/revisions/" + strconv.Itoa(revision) + "/files/" + name + "/content"
+
 	if g.r.User != "" && g.r.Pass != "" {
-		_url = g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/a/changes/" + strconv.Itoa(change) +
+		buf = g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/a/changes/" + strconv.Itoa(change) +
+			"/revisions/" + strconv.Itoa(revision) + "/files/" + name + "/content"
+	}
+
+	return buf
+}
+
+func (g *gerrit) urlDetail(change int) string {
+	buf := g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/changes/" + strconv.Itoa(change) + "/detail"
+
+	if g.r.User != "" && g.r.Pass != "" {
+		buf = g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/a/changes/" + strconv.Itoa(change) + "/detail"
+	}
+
+	return buf
+}
+
+func (g *gerrit) urlPatch(change, revision int) string {
+	buf := g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/changes/" + strconv.Itoa(change) +
+		"/revisions/" + strconv.Itoa(revision) + "/patch"
+
+	if g.r.User != "" && g.r.Pass != "" {
+		buf = g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/a/changes/" + strconv.Itoa(change) +
+			"/revisions/" + strconv.Itoa(revision) + "/patch"
+	}
+
+	return buf
+}
+
+func (g *gerrit) urlQuery(search, option string, start int) string {
+	query := "?q=" + search + "&o=" + option + "&n=" + strconv.Itoa(start)
+
+	buf := g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/changes/" + query
+	if g.r.User != "" && g.r.Pass != "" {
+		buf = g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/a/changes/" + query
+	}
+
+	return buf
+}
+
+func (g *gerrit) urlReview(change, revision int) string {
+	buf := g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/changes/" + strconv.Itoa(change) +
+		"/revisions/" + strconv.Itoa(revision) + "/review"
+
+	if g.r.User != "" && g.r.Pass != "" {
+		buf = g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/a/changes/" + strconv.Itoa(change) +
 			"/revisions/" + strconv.Itoa(revision) + "/review"
 	}
 
+	return buf
+}
+
+func (g *gerrit) get(url string) ([]byte, error) {
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to request")
+	}
+
+	if g.r.User != "" && g.r.Pass != "" {
+		req.SetBasicAuth(g.r.User, g.r.Pass)
+	}
+
+	rsp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to do")
+	}
+
+	defer func() {
+		_ = rsp.Body.Close()
+	}()
+
+	if rsp.StatusCode != http.StatusOK {
+		return nil, errors.New("invalid status")
+	}
+
+	data, err := ioutil.ReadAll(rsp.Body)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to read")
+	}
+
+	return data, nil
+}
+
+func (g *gerrit) post(url string, data map[string]interface{}) error {
 	buf, err := json.Marshal(data)
 	if err != nil {
 		return errors.Wrap(err, "failed to marshal")
 	}
 
-	req, err := http.NewRequest(http.MethodPost, _url, bytes.NewBuffer(buf))
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(buf))
 	if err != nil {
 		return errors.Wrap(err, "failed to request")
 	}
