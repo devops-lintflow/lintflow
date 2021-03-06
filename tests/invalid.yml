@@ -7,12 +7,31 @@ spec:
     - name: lintaosp
       host: 127.0.0.1
       port: 9090
+      include:
+        extension:
+          - .java
+          - .xml
     - name: lintkernel
       host: 127.0.0.1
       port: 9091
+      include:
+        extension:
+          - .c
+          - .diff
+          - .h
     - name: lintlang
       host: 127.0.0.1
       port: 9092
+      include:
+        extension:
+          - .c
+          - .cpp
+          - .go
+          - .h
+          - .hpp
+          - .java
+          - .py
+          - .sh
   review:
     - name: gerrit
       host: http://127.0.0.1

@@ -29,9 +29,14 @@ type Spec struct {
 }
 
 type Lint struct {
-	Host string `yaml:"host"`
-	Name string `yaml:"name"`
-	Port int    `yaml:"port"`
+	Host    string  `yaml:"host"`
+	Include Include `yaml:"include"`
+	Name    string  `yaml:"name"`
+	Port    int     `yaml:"port"`
+}
+
+type Include struct {
+	Extension []string `yaml:"extension"`
 }
 
 type Review struct {
