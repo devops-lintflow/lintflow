@@ -25,7 +25,7 @@ const (
 
 type Review interface {
 	Clean(string) error
-	Fetch(string) (string, error)
+	Fetch(string) (string, []string, error)
 	Vote(string, []proto.Format) error
 }
 
@@ -75,17 +75,17 @@ func (r *review) Clean(name string) error {
 	return nil
 }
 
-func (r *review) Fetch(commit string) (string, error) {
+func (r *review) Fetch(commit string) (rname string, flist []string, emsg error) {
 	if r.hdl == nil {
-		return "", errors.New("invalid handle")
+		return "", nil, errors.New("invalid handle")
 	}
 
-	buf, err := r.hdl.Fetch(commit)
+	root, files, err := r.hdl.Fetch(commit)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to fetch")
+		return "", nil, errors.Wrap(err, "failed to fetch")
 	}
 
-	return buf, nil
+	return root, files, nil
 }
 
 func (r *review) Vote(commit string, data []proto.Format) error {

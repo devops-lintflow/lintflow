@@ -18,10 +18,20 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestLint(t *testing.T) {
+func TestFilter(t *testing.T) {
 	_ = &lint{
 		cfg: DefaultConfig(),
 	}
 
+	// TODO
+
 	assert.Equal(t, nil, nil)
+}
+
+func TestMarshal(t *testing.T) {
+	// TODO
+}
+
+func TestRoutine(t *testing.T) {
+	// TODO
 }

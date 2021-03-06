@@ -56,10 +56,10 @@ func TestClean(t *testing.T) {
 func TestFetch(t *testing.T) {
 	h := initHandle(t)
 
-	name, err := h.Fetch(commitGerrit)
+	root, _, err := h.Fetch(commitGerrit)
 	assert.Equal(t, nil, err)
 
-	err = h.Clean(name)
+	err = h.Clean(root)
 	assert.Equal(t, nil, err)
 }
 

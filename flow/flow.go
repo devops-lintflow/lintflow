@@ -47,43 +47,36 @@ func DefaultConfig() *Config {
 }
 
 func (f *flow) Run(commit string) ([]proto.Format, error) {
-	name, err := f.cfg.Review.Fetch(commit)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to fetch")
-	}
-
-	bufLint, err := f.cfg.Lint.Run(name)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to lint")
-	}
-
-	bufRuntime := make([]interface{}, len(bufLint))
-	for index, val := range bufLint {
-		bufRuntime[index] = val
-	}
-
-	retRuntime, err := runtime.Run(f.routine, bufRuntime)
+	buf, err := runtime.Run(f.routine, []interface{}{commit})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to run")
 	}
 
-	bufReview := make([]proto.Format, len(retRuntime))
-	for index, val := range retRuntime {
-		bufReview[index] = val.(proto.Format)
+	ret := make([]proto.Format, len(buf))
+	for index, val := range buf {
+		ret[index] = val.(proto.Format)
 	}
 
-	if err := f.cfg.Review.Vote(commit, bufReview); err != nil {
-		return nil, errors.Wrap(err, "failed to vote")
-	}
-
-	if err := f.cfg.Review.Clean(name); err != nil {
-		return nil, errors.Wrap(err, "failed to clean")
-	}
-
-	return bufReview, nil
+	return ret, nil
 }
 
 func (f *flow) routine(data interface{}) interface{} {
-	// TODO
-	return nil
+	commit := data.([]interface{})[0].(string)
+
+	root, files, err := f.cfg.Review.Fetch(commit)
+	defer func() { _ = f.cfg.Review.Clean(root) }()
+	if err != nil {
+		return nil
+	}
+
+	buf, err := f.cfg.Lint.Run(root, files)
+	if err != nil {
+		return nil
+	}
+
+	if err := f.cfg.Review.Vote(commit, buf); err != nil {
+		return nil
+	}
+
+	return buf
 }

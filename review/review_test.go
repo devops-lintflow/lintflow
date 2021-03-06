@@ -13,13 +13,13 @@
 package review
 
 import (
-	"github.com/pkg/errors"
-	"gopkg.in/yaml.v3"
 	"io/ioutil"
 	"os"
 	"testing"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+	"gopkg.in/yaml.v3"
 
 	"github.com/craftslab/lintflow/config"
 	"github.com/craftslab/lintflow/proto"
@@ -68,7 +68,7 @@ func TestReview(t *testing.T) {
 
 	r := New(cfg)
 
-	name, err := r.Fetch(commitGerrit)
+	root, _, err := r.Fetch(commitGerrit)
 	assert.Equal(t, nil, err)
 
 	buf := make([]proto.Format, 0)
@@ -87,6 +87,6 @@ func TestReview(t *testing.T) {
 	err = r.Vote(commitGerrit, buf)
 	assert.Equal(t, nil, err)
 
-	err = r.Clean(name)
+	err = r.Clean(root)
 	assert.Equal(t, nil, err)
 }

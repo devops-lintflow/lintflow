@@ -43,7 +43,7 @@ func (g *gerrit) Clean(name string) error {
 	return nil
 }
 
-func (g *gerrit) Fetch(commit string) (string, error) {
+func (g *gerrit) Fetch(commit string) (rname string, flist []string, emsg error) {
 	helper := func(dir, file, data string) error {
 		if err := os.MkdirAll(dir, os.ModePerm); err != nil {
 			return errors.Wrap(err, "failed to mkdir")
@@ -68,7 +68,7 @@ func (g *gerrit) Fetch(commit string) (string, error) {
 	// Set root
 	d, err := os.Getwd()
 	if err != nil {
-		return "", errors.Wrap(err, "failed to getwd")
+		return "", nil, errors.Wrap(err, "failed to getwd")
 	}
 
 	t := time.Now()
@@ -77,12 +77,12 @@ func (g *gerrit) Fetch(commit string) (string, error) {
 	// Query commit
 	r, err := g.get(g.urlQuery("commit:"+commit, []string{"CURRENT_FILES", "CURRENT_REVISION"}, 0))
 	if err != nil {
-		return "", errors.Wrap(err, "failed to query")
+		return "", nil, errors.Wrap(err, "failed to query")
 	}
 
 	ret, err := g.unmarshalList(r)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to unmarshal")
+		return "", nil, errors.Wrap(err, "failed to unmarshal")
 	}
 
 	revisions := ret["revisions"].(map[string]interface{})
@@ -91,35 +91,42 @@ func (g *gerrit) Fetch(commit string) (string, error) {
 	changeNum := int(ret["_number"].(float64))
 	revisionNum := int(current["_number"].(float64))
 
+	path := filepath.Join(root, strconv.Itoa(changeNum), ret["current_revision"].(string))
+
 	// Get patch
 	buf, err := g.get(g.urlPatch(changeNum, revisionNum))
 	if err != nil {
-		return "", errors.Wrap(err, "failed to patch")
+		return "", nil, errors.Wrap(err, "failed to patch")
 	}
 
-	err = helper(filepath.Join(root, strconv.Itoa(changeNum), ret["current_revision"].(string)),
-		proto.Base64Patch, string(buf))
+	err = helper(path, proto.Base64Patch, string(buf))
 	if err != nil {
-		return "", errors.Wrap(err, "failed to fetch")
+		return "", nil, errors.Wrap(err, "failed to fetch")
 	}
 
 	// Get content
-	files := current["files"].(map[string]interface{})
+	fs := current["files"].(map[string]interface{})
 
-	for key := range files {
+	for key := range fs {
 		buf, err := g.get(g.urlContent(changeNum, revisionNum, key))
 		if err != nil {
-			return "", errors.Wrap(err, "failed to content")
+			return "", nil, errors.Wrap(err, "failed to content")
 		}
 
-		err = helper(filepath.Join(root, strconv.Itoa(changeNum), ret["current_revision"].(string), filepath.Dir(key)),
-			filepath.Base(key)+proto.Base64Content, string(buf))
+		err = helper(filepath.Join(path, filepath.Dir(key)), filepath.Base(key)+proto.Base64Content, string(buf))
 		if err != nil {
-			return "", errors.Wrap(err, "failed to fetch")
+			return "", nil, errors.Wrap(err, "failed to fetch")
 		}
 	}
 
-	return root, nil
+	var files []string
+
+	files = append(files, proto.Base64Patch)
+	for key := range fs {
+		files = append(files, key)
+	}
+
+	return root, files, nil
 }
 
 func (g *gerrit) Vote(commit string, data []proto.Format) error {
