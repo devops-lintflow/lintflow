@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+option go_package = "github.com/craftslab/lintflow";
+
+package lint;
+
+// The service definition.
+service LintProto {
+  // Sends lint
+  rpc SendLint (LintRequest) returns (LintReply) {}
+}
+
+// The request message.
+message LintRequest {
+  string message = 1;
+}
+
+// The response message.
+message LintReply {
+  string message = 1;
+}

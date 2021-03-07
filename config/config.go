@@ -29,10 +29,14 @@ type Spec struct {
 }
 
 type Lint struct {
-	Host    string  `yaml:"host"`
+	Filter Filter `yaml:"filter"`
+	Host   string `yaml:"host"`
+	Name   string `yaml:"name"`
+	Port   int    `yaml:"port"`
+}
+
+type Filter struct {
 	Include Include `yaml:"include"`
-	Name    string  `yaml:"name"`
-	Port    int     `yaml:"port"`
 }
 
 type Include struct {

@@ -16,20 +16,55 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/craftslab/lintflow/config"
+)
+
+const (
+	root = "../tests/gerrit-2021-03-06/21/c5d3440911e06ed4fc60252bd89e7756f9ae67ee"
 )
 
 func TestFilter(t *testing.T) {
-	_ = &lint{
-		cfg: DefaultConfig(),
-	}
+	var f config.Filter
+	var l lint
 
-	// TODO
+	f.Include.Extension = []string{".java", ".xml"}
 
-	assert.Equal(t, nil, nil)
+	b := []string{".ext"}
+	ret := l.filter(f, b)
+	assert.Equal(t, 0, len(ret))
+
+	b = []string{"foo.ext"}
+	ret = l.filter(f, b)
+	assert.Equal(t, 0, len(ret))
+
+	b = []string{".java"}
+	ret = l.filter(f, b)
+	assert.Equal(t, 1, len(ret))
+
+	b = []string{"foo.java"}
+	ret = l.filter(f, b)
+	assert.Equal(t, 1, len(ret))
+
+	b = []string{".ext", ".java", ".xml", "foo.ext", "foo.java", "foo.xml"}
+	ret = l.filter(f, b)
+	assert.Equal(t, 4, len(ret))
 }
 
 func TestMarshal(t *testing.T) {
-	// TODO
+	var buf []string
+	var l lint
+
+	_, err := l.marshal(root, buf)
+	assert.NotEqual(t, nil, err)
+
+	buf = []string{"foo.base64"}
+	_, err = l.marshal(root, buf)
+	assert.NotEqual(t, nil, err)
+
+	buf = []string{"diff.base64"}
+	_, err = l.marshal(root, buf)
+	assert.Equal(t, nil, err)
 }
 
 func TestRoutine(t *testing.T) {
