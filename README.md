@@ -18,8 +18,8 @@
 
 ## Prerequisites
 
-- Go >= 1.15.0
-- gRPC == 1.26.0
+- Go >= 1.16.0
+- gRPC >= 1.36.0
 
 
 
