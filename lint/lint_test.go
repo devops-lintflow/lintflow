@@ -66,7 +66,3 @@ func TestMarshal(t *testing.T) {
 	_, err = l.marshal(root, buf)
 	assert.Equal(t, nil, err)
 }
-
-func TestRoutine(t *testing.T) {
-	// TODO
-}

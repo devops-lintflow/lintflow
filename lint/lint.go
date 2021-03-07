@@ -13,13 +13,17 @@
 package lint
 
 import (
+	"context"
 	"encoding/json"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
+	"google.golang.org/grpc"
 
 	"github.com/craftslab/lintflow/config"
 	"github.com/craftslab/lintflow/proto"
@@ -136,6 +140,38 @@ func (l *lint) marshal(root string, data []string) ([]byte, error) {
 }
 
 func (l *lint) routine(host string, port int, data []byte) ([]proto.Format, error) {
-	// TODO
-	return nil, nil
+	helper := func(data string) ([]proto.Format, error) {
+		var buf map[string][]proto.Format
+		if err := json.Unmarshal([]byte(data), &buf); err != nil {
+			return nil, errors.Wrap(err, "failed to unmarshal")
+		}
+		var ret []proto.Format
+		for _, val := range buf {
+			ret = append(ret, val...)
+		}
+		return ret, nil
+	}
+
+	conn, err := grpc.Dial(host+":"+strconv.Itoa(port), grpc.WithInsecure(), grpc.WithBlock())
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to dial")
+	}
+	defer func() { _ = conn.Close() }()
+
+	client := NewLintProtoClient(conn)
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	reply, err := client.SendLint(ctx, &LintRequest{Message: string(data)})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to send")
+	}
+
+	buf, err := helper(reply.GetMessage())
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get")
+	}
+
+	return buf, nil
 }

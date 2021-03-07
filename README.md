@@ -138,6 +138,35 @@ spec:
 
 
 
+## Errorformat
+
+- **Error type**
+
+```
+E: Error
+I: Information
+W: Warning
+```
+
+- **JSON format**
+
+```json
+{
+  "file": "name",
+  "line": 1,
+  "type": "Error",
+  "details": "text"
+}
+```
+
+- **Text format**
+
+```text
+{file}:{line}:{type}:{details}
+```
+
+
+
 ## License
 
 Project License can be found [here](LICENSE).
