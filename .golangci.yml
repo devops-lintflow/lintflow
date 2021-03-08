@@ -65,7 +65,6 @@ linters:
     - gosimple
     - govet
     - ineffassign
-    - interfacer
     - lll
     - misspell
     - nakedret
@@ -85,6 +84,7 @@ linters:
   # - godox
   # - goimports
   # - golint
+  # - interfacer
   # - maligned
   # - prealloc
   # - stylecheck

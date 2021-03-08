@@ -52,20 +52,41 @@ func DefaultConfig() *Config {
 }
 
 func (l *lint) Run(root string, files []string) ([]proto.Format, error) {
+	type result struct {
+		data []proto.Format
+		err  error
+	}
+
+	ch := make(chan result, len(l.cfg.Lints))
+
+	for _, val := range l.cfg.Lints {
+		go func(root string, files []string, val config.Lint) {
+			f := l.filter(val.Filter, files)
+			if len(f) != 0 {
+				m, e := l.marshal(root, f)
+				if e != nil {
+					ch <- result{nil, errors.Wrap(e, "failed to marshal")}
+				}
+				r, e := l.routine(val.Host, val.Port, m)
+				if e != nil {
+					ch <- result{nil, errors.Wrap(e, "failed to routine")}
+				}
+				ch <- result{r, nil}
+			} else {
+				ch <- result{[]proto.Format{}, nil}
+			}
+		}(root, files, val)
+	}
+
 	var ret []proto.Format
 
-	// TODO: goroutine
-	for _, val := range l.cfg.Lints {
-		f := l.filter(val.Filter, files)
-		if len(f) != 0 {
-			m, err := l.marshal(root, f)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to marshal")
-			}
-			ret, err = l.routine(val.Host, val.Port, m)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to routine")
-			}
+	for range l.cfg.Lints {
+		r := <-ch
+		if r.err != nil {
+			return nil, r.err
+		}
+		if len(r.data) != 0 {
+			ret = append(ret, r.data...)
 		}
 	}
 

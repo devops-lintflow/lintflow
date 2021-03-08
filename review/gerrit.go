@@ -130,7 +130,7 @@ func (g *gerrit) Fetch(commit string) (rname string, flist []string, emsg error)
 }
 
 func (g *gerrit) Vote(commit string, data []proto.Format) error {
-	helper := func() (map[string]interface{}, map[string]interface{}, string) {
+	helper := func(data []proto.Format) (map[string]interface{}, map[string]interface{}, string) {
 		if len(data) == 0 {
 			return nil, map[string]interface{}{g.r.Vote.Label: g.r.Vote.Approval}, g.r.Vote.Message
 		}
@@ -159,7 +159,7 @@ func (g *gerrit) Vote(commit string, data []proto.Format) error {
 	revisions := ret["revisions"].(map[string]interface{})
 	current := revisions[ret["current_revision"].(string)].(map[string]interface{})
 
-	comments, labels, message := helper()
+	comments, labels, message := helper(data)
 	buf := map[string]interface{}{"comments": comments, "labels": labels, "message": message}
 
 	if err := g.post(g.urlReview(int(ret["_number"].(float64)), int(current["_number"].(float64))), buf); err != nil {
