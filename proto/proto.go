@@ -14,10 +14,14 @@ package proto
 
 // Prototype
 // {
-//   "file": "name",
-//   "line": 1,
-//   "type": "Error",
-//   "details": "text"
+//   "lint": [
+//     {
+//       "file": "name",
+//       "line": 1,
+//       "type": "Error",
+//       "details": "text"
+//     }
+//   ]
 // }
 
 const (

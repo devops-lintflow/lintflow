@@ -152,17 +152,21 @@ W: Warning
 
 ```json
 {
-  "file": "name",
-  "line": 1,
-  "type": "Error",
-  "details": "text"
+  "lint": [
+    {
+      "file": "name",
+      "line": 1,
+      "type": "Error",
+      "details": "text"
+    }
+  ]
 }
 ```
 
 - **Text format**
 
 ```text
-{file}:{line}:{type}:{details}
+{lint}:{file}:{line}:{type}:{details}
 ```
 
 
