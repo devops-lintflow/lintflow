@@ -29,10 +29,11 @@ type Spec struct {
 }
 
 type Lint struct {
-	Filter Filter `yaml:"filter"`
-	Host   string `yaml:"host"`
-	Name   string `yaml:"name"`
-	Port   int    `yaml:"port"`
+	Filter  Filter `yaml:"filter"`
+	Host    string `yaml:"host"`
+	Name    string `yaml:"name"`
+	Port    int    `yaml:"port"`
+	Timeout int    `yaml:"timeout"`
 }
 
 type Filter struct {

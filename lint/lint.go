@@ -29,10 +29,6 @@ import (
 	"github.com/craftslab/lintflow/proto"
 )
 
-const (
-	timeout = 60 * time.Minute
-)
-
 type Lint interface {
 	Run(root string, files []string) ([]proto.Format, error)
 }
@@ -71,7 +67,7 @@ func (l *lint) Run(root string, files []string) ([]proto.Format, error) {
 				if e != nil {
 					ch <- result{nil, errors.Wrap(e, "failed to marshal")}
 				}
-				r, e := l.routine(val.Host, val.Port, m)
+				r, e := l.routine(val.Host, val.Port, val.Timeout, m)
 				if e != nil {
 					ch <- result{nil, errors.Wrap(e, "failed to routine")}
 				}
@@ -164,7 +160,7 @@ func (l *lint) marshal(root string, data []string) ([]byte, error) {
 	return ret, nil
 }
 
-func (l *lint) routine(host string, port int, data []byte) ([]proto.Format, error) {
+func (l *lint) routine(host string, port, timeout int, data []byte) ([]proto.Format, error) {
 	helper := func(data string) ([]proto.Format, error) {
 		var buf map[string][]proto.Format
 		if err := json.Unmarshal([]byte(data), &buf); err != nil {
@@ -185,7 +181,7 @@ func (l *lint) routine(host string, port int, data []byte) ([]proto.Format, erro
 
 	client := NewLintProtoClient(conn)
 
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
 	defer cancel()
 
 	reply, err := client.SendLint(ctx, &LintRequest{Message: string(data)})

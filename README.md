@@ -88,6 +88,7 @@ spec:
     - name: lintaosp
       host: 127.0.0.1
       port: 9090
+      timeout: 300
       filter:
         include:
           extension:
@@ -96,6 +97,7 @@ spec:
     - name: lintkernel
       host: 127.0.0.1
       port: 9091
+      timeout: 300
       filter:
         include:
           extension:
@@ -105,6 +107,7 @@ spec:
     - name: lintlang
       host: 127.0.0.1
       port: 9092
+      timeout: 300
       filter:
         include:
           extension:
