@@ -30,7 +30,7 @@ import (
 )
 
 const (
-	timeout = 60 * time.Second
+	timeout = 60 * time.Minute
 )
 
 type Lint interface {
