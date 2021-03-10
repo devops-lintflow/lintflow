@@ -153,10 +153,8 @@ func runFlow(_ *config.Config, r review.Review, l lint.Lint, w writer.Writer) er
 		return errors.Wrap(err, "failed to run flow")
 	}
 
-	if len(buf) != 0 {
-		if err = w.Run(buf); err != nil {
-			return errors.Wrap(err, "failed to run writer")
-		}
+	if err = w.Run(buf); err != nil {
+		return errors.Wrap(err, "failed to run writer")
 	}
 
 	return nil
