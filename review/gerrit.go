@@ -123,10 +123,10 @@ func (g *gerrit) Fetch(commit string) (rname string, flist []string, emsg error)
 
 	files = append(files, proto.Base64Patch)
 	for key := range fs {
-		files = append(files, key)
+		files = append(files, filepath.Join(filepath.Dir(key), filepath.Base(key)+proto.Base64Content))
 	}
 
-	return root, files, nil
+	return path, files, nil
 }
 
 func (g *gerrit) Vote(commit string, data []proto.Format) error {
