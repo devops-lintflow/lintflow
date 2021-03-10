@@ -1,7 +1,6 @@
 # lintflow
 
 [![Actions Status](https://github.com/craftslab/lintflow/workflows/CI/badge.svg?branch=master&event=push)](https://github.com/craftslab/lintflow/actions?query=workflow%3ACI)
-[![Docker](https://img.shields.io/docker/pulls/craftslab/lintflow)](https://hub.docker.com/r/craftslab/lintflow)
 [![Go Report Card](https://goreportcard.com/badge/github.com/craftslab/lintflow)](https://goreportcard.com/report/github.com/craftslab/lintflow)
 [![License](https://img.shields.io/github/license/craftslab/lintflow.svg?color=brightgreen)](https://github.com/craftslab/lintflow/blob/master/LICENSE)
 [![Tag](https://img.shields.io/github/tag/craftslab/lintflow.svg?color=brightgreen)](https://github.com/craftslab/lintflow/tags)
