@@ -54,6 +54,9 @@ func (f *flow) Run(commit string) ([]proto.Format, error) {
 
 	ret := make([]proto.Format, len(buf))
 	for index, val := range buf {
+		if val == nil {
+			return nil, errors.New("invalid data")
+		}
 		ret[index] = val.(proto.Format)
 	}
 
@@ -61,7 +64,7 @@ func (f *flow) Run(commit string) ([]proto.Format, error) {
 }
 
 func (f *flow) routine(data interface{}) interface{} {
-	commit := data.([]interface{})[0].(string)
+	commit := data.(string)
 
 	root, files, err := f.cfg.Review.Fetch(commit)
 	defer func() { _ = f.cfg.Review.Clean(root) }()
