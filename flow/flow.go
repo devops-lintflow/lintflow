@@ -14,6 +14,7 @@ package flow
 
 import (
 	"context"
+	"log"
 
 	"github.com/pkg/errors"
 
@@ -69,15 +70,18 @@ func (f *flow) routine(data interface{}) interface{} {
 	root, files, err := f.cfg.Review.Fetch(commit)
 	defer func() { _ = f.cfg.Review.Clean(root) }()
 	if err != nil {
+		log.Println(err)
 		return nil
 	}
 
 	buf, err := f.cfg.Lint.Run(root, files)
 	if err != nil {
+		log.Println(err)
 		return nil
 	}
 
 	if err := f.cfg.Review.Vote(commit, buf); err != nil {
+		log.Println(err)
 		return nil
 	}
 
