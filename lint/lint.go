@@ -29,6 +29,10 @@ import (
 	"github.com/craftslab/lintflow/proto"
 )
 
+const (
+	timeout = 60 * time.Second
+)
+
 type Lint interface {
 	Run(root string, files []string) ([]proto.Format, error)
 }
@@ -181,7 +185,7 @@ func (l *lint) routine(host string, port int, data []byte) ([]proto.Format, erro
 
 	client := NewLintProtoClient(conn)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
 	reply, err := client.SendLint(ctx, &LintRequest{Message: string(data)})

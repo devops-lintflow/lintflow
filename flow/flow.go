@@ -53,12 +53,10 @@ func (f *flow) Run(commit string) ([]proto.Format, error) {
 		return nil, errors.Wrap(err, "failed to run")
 	}
 
-	ret := make([]proto.Format, len(buf))
-	for index, val := range buf {
-		if val == nil {
-			return nil, errors.New("invalid data")
-		}
-		ret[index] = val.(proto.Format)
+	var ret []proto.Format
+
+	for _, val := range buf {
+		ret = append(ret, val.([]proto.Format)...)
 	}
 
 	return ret, nil
