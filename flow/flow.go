@@ -56,7 +56,9 @@ func (f *flow) Run(commit string) ([]proto.Format, error) {
 	var ret []proto.Format
 
 	for _, val := range buf {
-		ret = append(ret, val.([]proto.Format)...)
+		if val != nil {
+			ret = append(ret, val.([]proto.Format)...)
+		}
 	}
 
 	return ret, nil
