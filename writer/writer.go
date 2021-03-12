@@ -37,11 +37,10 @@ var (
 )
 
 type Writer interface {
-	Run([]proto.Format) error
+	Run(string, []proto.Format) error
 }
 
 type Config struct {
-	Name string
 }
 
 type writer struct {
@@ -59,16 +58,16 @@ func DefaultConfig() *Config {
 	return &Config{}
 }
 
-func (w *writer) Run(data []proto.Format) error {
+func (w *writer) Run(name string, data []proto.Format) error {
 	var err error
 	w.data = data
 
-	if strings.HasSuffix(w.cfg.Name, ".json") {
-		err = w.writeJson()
-	} else if strings.HasSuffix(w.cfg.Name, ".txt") {
-		err = w.writeTxt()
-	} else if strings.HasSuffix(w.cfg.Name, ".xlsx") {
-		err = w.writeXlsx()
+	if strings.HasSuffix(name, ".json") {
+		err = w.writeJson(name)
+	} else if strings.HasSuffix(name, ".txt") {
+		err = w.writeTxt(name)
+	} else if strings.HasSuffix(name, ".xlsx") {
+		err = w.writeXlsx(name)
 	} else {
 		return errors.New("invalid suffix")
 	}
@@ -76,7 +75,7 @@ func (w *writer) Run(data []proto.Format) error {
 	return err
 }
 
-func (w *writer) writeJson() error {
+func (w *writer) writeJson(name string) error {
 	buf := make(map[string][]proto.Format)
 	buf[sheetName] = w.data
 
@@ -85,14 +84,14 @@ func (w *writer) writeJson() error {
 		return errors.Wrap(err, "failed to marshal")
 	}
 
-	if err := ioutil.WriteFile(w.cfg.Name, b, 0600); err != nil {
+	if err := ioutil.WriteFile(name, b, 0600); err != nil {
 		return errors.Wrap(err, "failed to write")
 	}
 
 	return nil
 }
 
-func (w *writer) writeTxt() error {
+func (w *writer) writeTxt(name string) error {
 	helper := func() []string {
 		var buf []string
 
@@ -121,7 +120,7 @@ func (w *writer) writeTxt() error {
 		return buf
 	}
 
-	f, err := os.Create(w.cfg.Name)
+	f, err := os.Create(name)
 	if err != nil {
 		return errors.Wrap(err, "failed to create")
 	}
@@ -141,7 +140,7 @@ func (w *writer) writeTxt() error {
 	return nil
 }
 
-func (w *writer) writeXlsx() error {
+func (w *writer) writeXlsx(name string) error {
 	helper := func() ([]interface{}, [][]interface{}) {
 		var head []interface{}
 		var data [][]interface{}
@@ -211,7 +210,7 @@ func (w *writer) writeXlsx() error {
 
 	f.SetActiveSheet(index)
 
-	if err := f.SaveAs(w.cfg.Name); err != nil {
+	if err := f.SaveAs(name); err != nil {
 		return errors.Wrap(err, "failed to save file")
 	}
 

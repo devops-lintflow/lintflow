@@ -125,12 +125,6 @@ func initWriter(cfg *config.Config) (writer.Writer, error) {
 		return nil, errors.New("failed to config")
 	}
 
-	if _, err := os.Stat(*outputFile); err == nil {
-		return nil, errors.New("file already exists")
-	}
-
-	c.Name = *outputFile
-
 	return writer.New(c), nil
 }
 
@@ -153,8 +147,14 @@ func runFlow(_ *config.Config, r review.Review, l lint.Lint, w writer.Writer) er
 		return errors.Wrap(err, "failed to run flow")
 	}
 
-	if err = w.Run(buf); err != nil {
-		return errors.Wrap(err, "failed to run writer")
+	if *outputFile != "" {
+		if _, err = os.Stat(*outputFile); err == nil {
+			return errors.New("file already exists")
+		}
+
+		if err = w.Run(*outputFile, buf); err != nil {
+			return errors.Wrap(err, "failed to run writer")
+		}
 	}
 
 	return nil

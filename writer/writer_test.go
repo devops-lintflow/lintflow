@@ -31,49 +31,52 @@ var (
 )
 
 func TestWriterJson(t *testing.T) {
+	name := "output.json"
+
 	w := &writer{
 		cfg: DefaultConfig(),
 	}
 
-	w.cfg.Name = "output.json"
 	w.data = make([]proto.Format, 2)
 	w.data[0] = fileContent
 	w.data[1] = fileContent
 
-	err := w.writeJson()
-	defer func(name string) { _ = os.Remove(name) }(w.cfg.Name)
+	err := w.writeJson(name)
+	defer func(name string) { _ = os.Remove(name) }(name)
 
 	assert.Equal(t, nil, err)
 }
 
 func TestWriteTxt(t *testing.T) {
+	name := "output.txt"
+
 	w := &writer{
 		cfg: DefaultConfig(),
 	}
 
-	w.cfg.Name = "output.txt"
 	w.data = make([]proto.Format, 2)
 	w.data[0] = fileContent
 	w.data[1] = fileContent
 
-	err := w.writeTxt()
-	defer func(name string) { _ = os.Remove(name) }(w.cfg.Name)
+	err := w.writeTxt(name)
+	defer func(name string) { _ = os.Remove(name) }(name)
 
 	assert.Equal(t, nil, err)
 }
 
 func TestWriteXlsx(t *testing.T) {
+	name := "output.xlsx"
+
 	w := &writer{
 		cfg: DefaultConfig(),
 	}
 
-	w.cfg.Name = "output.xlsx"
 	w.data = make([]proto.Format, 2)
 	w.data[0] = fileContent
 	w.data[1] = fileContent
 
-	err := w.writeXlsx()
-	defer func(name string) { _ = os.Remove(name) }(w.cfg.Name)
+	err := w.writeXlsx(name)
+	defer func(name string) { _ = os.Remove(name) }(name)
 
 	assert.Equal(t, nil, err)
 }
