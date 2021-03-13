@@ -11,7 +11,7 @@
 
 *lintflow* is a master of lint workers written in Go.
 
-- See *[lintaosp](https://github.com/craftslab/lintaosp/)* as a worker of *lintflow*.
+- See *[lintwork](https://github.com/craftslab/lintwork/)* as a worker of *lintflow*.
 
 
 
