@@ -18,6 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/craftslab/lintflow/config"
+	"github.com/craftslab/lintflow/proto"
 )
 
 const (
@@ -62,7 +63,7 @@ func TestMarshal(t *testing.T) {
 	_, err = l.marshal(root, buf)
 	assert.NotEqual(t, nil, err)
 
-	buf = []string{"diff.base64"}
+	buf = []string{proto.Base64Patch}
 	_, err = l.marshal(root, buf)
 	assert.Equal(t, nil, err)
 }

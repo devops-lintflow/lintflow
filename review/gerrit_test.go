@@ -113,6 +113,19 @@ func TestGetDetail(t *testing.T) {
 	assert.Equal(t, nil, err)
 }
 
+func TestGetFiles(t *testing.T) {
+	h := initHandle(t)
+
+	_, err := h.get(h.urlFiles(-1, -1))
+	assert.NotEqual(t, nil, err)
+
+	buf, err := h.get(h.urlFiles(changeGerrit, revisionGerrit))
+	assert.Equal(t, nil, err)
+
+	_, err = h.unmarshal(buf)
+	assert.Equal(t, nil, err)
+}
+
 func TestGetPatch(t *testing.T) {
 	h := initHandle(t)
 

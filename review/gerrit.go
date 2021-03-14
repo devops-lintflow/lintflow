@@ -31,6 +31,10 @@ import (
 	"github.com/craftslab/lintflow/proto"
 )
 
+const (
+	commitMsg = "/COMMIT_MSG"
+)
+
 type gerrit struct {
 	r config.Review
 }
@@ -44,27 +48,6 @@ func (g *gerrit) Clean(name string) error {
 }
 
 func (g *gerrit) Fetch(commit string) (rname string, flist []string, emsg error) {
-	helper := func(dir, file, data string) error {
-		if err := os.MkdirAll(dir, os.ModePerm); err != nil {
-			return errors.Wrap(err, "failed to mkdir")
-		}
-		f, err := os.Create(filepath.Join(dir, file))
-		if err != nil {
-			return errors.Wrap(err, "failed to create")
-		}
-		defer func() {
-			_ = f.Close()
-		}()
-		b := bufio.NewWriter(f)
-		if _, err := b.WriteString(data); err != nil {
-			return errors.Wrap(err, "failed to write")
-		}
-		defer func() {
-			_ = b.Flush()
-		}()
-		return nil
-	}
-
 	// Set root
 	d, err := os.Getwd()
 	if err != nil {
@@ -75,14 +58,14 @@ func (g *gerrit) Fetch(commit string) (rname string, flist []string, emsg error)
 	root := filepath.Join(d, "gerrit-"+t.Format("2006-01-02"))
 
 	// Query commit
-	r, err := g.get(g.urlQuery("commit:"+commit, []string{"CURRENT_FILES", "CURRENT_REVISION"}, 0))
+	r, err := g.get(g.urlQuery("commit:"+commit, []string{"CURRENT_REVISION"}, 0))
 	if err != nil {
 		return "", nil, errors.Wrap(err, "failed to query")
 	}
 
 	ret, err := g.unmarshalList(r)
 	if err != nil {
-		return "", nil, errors.Wrap(err, "failed to unmarshal")
+		return "", nil, errors.Wrap(err, "failed to unmarshalList")
 	}
 
 	revisions := ret["revisions"].(map[string]interface{})
@@ -93,37 +76,56 @@ func (g *gerrit) Fetch(commit string) (rname string, flist []string, emsg error)
 
 	path := filepath.Join(root, strconv.Itoa(changeNum), ret["current_revision"].(string))
 
-	// Get patch
-	buf, err := g.get(g.urlPatch(changeNum, revisionNum))
+	// Get files
+	buf, err := g.get(g.urlFiles(changeNum, revisionNum))
 	if err != nil {
-		return "", nil, errors.Wrap(err, "failed to patch")
+		return "", nil, errors.Wrap(err, "failed to files")
 	}
 
-	err = helper(path, proto.Base64Patch, string(buf))
+	fs, err := g.unmarshal(buf)
 	if err != nil {
-		return "", nil, errors.Wrap(err, "failed to fetch")
+		return "", nil, errors.Wrap(err, "failed to unmarshal")
 	}
 
 	// Get content
-	fs := current["files"].(map[string]interface{})
-
 	for key := range fs {
-		buf, err := g.get(g.urlContent(changeNum, revisionNum, key))
+		buf, err = g.get(g.urlContent(changeNum, revisionNum, key))
 		if err != nil {
 			return "", nil, errors.Wrap(err, "failed to content")
 		}
 
-		err = helper(filepath.Join(path, filepath.Dir(key)), filepath.Base(key)+proto.Base64Content, string(buf))
+		file := filepath.Base(key) + proto.Base64Content
+		if key == commitMsg {
+			file = proto.Base64Message
+		}
+
+		err = g.write(filepath.Join(path, filepath.Dir(key)), file, string(buf))
 		if err != nil {
 			return "", nil, errors.Wrap(err, "failed to fetch")
 		}
 	}
 
+	// Get patch
+	buf, err = g.get(g.urlPatch(changeNum, revisionNum))
+	if err != nil {
+		return "", nil, errors.Wrap(err, "failed to patch")
+	}
+
+	err = g.write(path, proto.Base64Patch, string(buf))
+	if err != nil {
+		return "", nil, errors.Wrap(err, "failed to fetch")
+	}
+
+	// Return files
 	var files []string
 
 	files = append(files, proto.Base64Patch)
 	for key := range fs {
-		files = append(files, filepath.Join(filepath.Dir(key), filepath.Base(key)+proto.Base64Content))
+		if key == commitMsg {
+			files = append(files, proto.Base64Message)
+		} else {
+			files = append(files, filepath.Join(filepath.Dir(key), filepath.Base(key)+proto.Base64Content))
+		}
 	}
 
 	return path, files, nil
@@ -153,7 +155,7 @@ func (g *gerrit) Vote(commit string, data []proto.Format) error {
 
 	ret, err := g.unmarshalList(r)
 	if err != nil {
-		return errors.Wrap(err, "failed to unmarshal")
+		return errors.Wrap(err, "failed to unmarshalList")
 	}
 
 	revisions := ret["revisions"].(map[string]interface{})
@@ -165,6 +167,26 @@ func (g *gerrit) Vote(commit string, data []proto.Format) error {
 	if err := g.post(g.urlReview(int(ret["_number"].(float64)), int(current["_number"].(float64))), buf); err != nil {
 		return errors.Wrap(err, "failed to review")
 	}
+
+	return nil
+}
+
+func (g *gerrit) write(dir, file, data string) error {
+	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+		return errors.Wrap(err, "failed to mkdir")
+	}
+
+	f, err := os.Create(filepath.Join(dir, file))
+	if err != nil {
+		return errors.Wrap(err, "failed to create")
+	}
+	defer func() { _ = f.Close() }()
+
+	w := bufio.NewWriter(f)
+	if _, err := w.WriteString(data); err != nil {
+		return errors.Wrap(err, "failed to write")
+	}
+	defer func() { _ = w.Flush() }()
 
 	return nil
 }
@@ -194,11 +216,11 @@ func (g *gerrit) unmarshalList(data []byte) (map[string]interface{}, error) {
 }
 
 func (g *gerrit) urlContent(change, revision int, name string) string {
-	buf := g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/changes/" + strconv.Itoa(change) +
+	buf := strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + "/changes/" + strconv.Itoa(change) +
 		"/revisions/" + strconv.Itoa(revision) + "/files/" + url.PathEscape(name) + "/content"
 
 	if g.r.User != "" && g.r.Pass != "" {
-		buf = g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/a/changes/" + strconv.Itoa(change) +
+		buf = strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + "/a/changes/" + strconv.Itoa(change) +
 			"/revisions/" + strconv.Itoa(revision) + "/files/" + url.PathEscape(name) + "/content"
 	}
 
@@ -206,21 +228,33 @@ func (g *gerrit) urlContent(change, revision int, name string) string {
 }
 
 func (g *gerrit) urlDetail(change int) string {
-	buf := g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/changes/" + strconv.Itoa(change) + "/detail"
+	buf := strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + "/changes/" + strconv.Itoa(change) + "/detail"
 
 	if g.r.User != "" && g.r.Pass != "" {
-		buf = g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/a/changes/" + strconv.Itoa(change) + "/detail"
+		buf = strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + "/a/changes/" + strconv.Itoa(change) + "/detail"
+	}
+
+	return buf
+}
+
+func (g *gerrit) urlFiles(change, revision int) string {
+	buf := strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + "/changes/" + strconv.Itoa(change) +
+		"/revisions/" + strconv.Itoa(revision) + "/files/"
+
+	if g.r.User != "" && g.r.Pass != "" {
+		buf = strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + "/a/changes/" + strconv.Itoa(change) +
+			"/revisions/" + strconv.Itoa(revision) + "/files/"
 	}
 
 	return buf
 }
 
 func (g *gerrit) urlPatch(change, revision int) string {
-	buf := g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/changes/" + strconv.Itoa(change) +
+	buf := strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + "/changes/" + strconv.Itoa(change) +
 		"/revisions/" + strconv.Itoa(revision) + "/patch"
 
 	if g.r.User != "" && g.r.Pass != "" {
-		buf = g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/a/changes/" + strconv.Itoa(change) +
+		buf = strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + "/a/changes/" + strconv.Itoa(change) +
 			"/revisions/" + strconv.Itoa(revision) + "/patch"
 	}
 
@@ -230,20 +264,20 @@ func (g *gerrit) urlPatch(change, revision int) string {
 func (g *gerrit) urlQuery(search string, option []string, start int) string {
 	query := "?q=" + search + "&o=" + strings.Join(option, "&o=") + "&n=" + strconv.Itoa(start)
 
-	buf := g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/changes/" + query
+	buf := strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + "/changes/" + query
 	if g.r.User != "" && g.r.Pass != "" {
-		buf = g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/a/changes/" + query
+		buf = strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + "/a/changes/" + query
 	}
 
 	return buf
 }
 
 func (g *gerrit) urlReview(change, revision int) string {
-	buf := g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/changes/" + strconv.Itoa(change) +
+	buf := strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + "/changes/" + strconv.Itoa(change) +
 		"/revisions/" + strconv.Itoa(revision) + "/review"
 
 	if g.r.User != "" && g.r.Pass != "" {
-		buf = g.r.Host + ":" + strconv.Itoa(g.r.Port) + "/a/changes/" + strconv.Itoa(change) +
+		buf = strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + "/a/changes/" + strconv.Itoa(change) +
 			"/revisions/" + strconv.Itoa(revision) + "/review"
 	}
 

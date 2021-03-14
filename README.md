@@ -85,28 +85,9 @@ metadata:
   name: lintflow
 spec:
   lint:
-    - name: lintaosp
+    - name: lintwork
       host: 127.0.0.1
       port: 9090
-      timeout: 300
-      filter:
-        include:
-          extension:
-            - .java
-            - .xml
-    - name: lintkernel
-      host: 127.0.0.1
-      port: 9091
-      timeout: 300
-      filter:
-        include:
-          extension:
-            - .c
-            - .diff
-            - .h
-    - name: lintlang
-      host: 127.0.0.1
-      port: 9092
       timeout: 300
       filter:
         include:
@@ -119,9 +100,12 @@ spec:
             - .java
             - .py
             - .sh
+            - .xml
+            - message
+            - patch
   review:
     - name: gerrit
-      host: http://127.0.0.1
+      host: http://127.0.0.1/
       port: 8080
       user: user
       pass: pass
