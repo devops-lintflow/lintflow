@@ -101,6 +101,7 @@ spec:
             - .py
             - .sh
             - .xml
+          name:
             - message
             - patch
   review:

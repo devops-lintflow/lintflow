@@ -30,6 +30,7 @@ func TestFilter(t *testing.T) {
 	var l lint
 
 	f.Include.Extension = []string{".java", ".xml"}
+	f.Include.Name = []string{"message", "patch"}
 
 	b := []string{".ext"}
 	ret := l.filter(f, b)
@@ -50,6 +51,18 @@ func TestFilter(t *testing.T) {
 	b = []string{".ext", ".java", ".xml", "foo.ext", "foo.java", "foo.xml"}
 	ret = l.filter(f, b)
 	assert.Equal(t, 4, len(ret))
+
+	b = []string{"foo"}
+	ret = l.filter(f, b)
+	assert.Equal(t, 0, len(ret))
+
+	b = []string{"message"}
+	ret = l.filter(f, b)
+	assert.Equal(t, 1, len(ret))
+
+	b = []string{"foo", "message", "patch"}
+	ret = l.filter(f, b)
+	assert.Equal(t, 2, len(ret))
 }
 
 func TestMarshal(t *testing.T) {

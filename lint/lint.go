@@ -94,7 +94,7 @@ func (l *lint) Run(root string, files []string) ([]proto.Format, error) {
 }
 
 func (l *lint) filter(f config.Filter, data []string) []string {
-	helper := func(data string) bool {
+	matchExtension := func(data string) bool {
 		match := false
 		for _, val := range f.Include.Extension {
 			if val == filepath.Ext(strings.TrimSuffix(data, proto.Base64Content)) {
@@ -105,10 +105,21 @@ func (l *lint) filter(f config.Filter, data []string) []string {
 		return match
 	}
 
+	matchName := func(data string) bool {
+		match := false
+		for _, val := range f.Include.Name {
+			if val == strings.TrimSuffix(data, proto.Base64Content) {
+				match = true
+				break
+			}
+		}
+		return match
+	}
+
 	var buf []string
 
 	for _, val := range data {
-		if helper(val) {
+		if matchExtension(val) || matchName(val) {
 			buf = append(buf, val)
 		}
 	}
