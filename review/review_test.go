@@ -15,7 +15,9 @@ package review
 import (
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
@@ -68,7 +70,11 @@ func TestReview(t *testing.T) {
 
 	r := New(cfg)
 
-	root, _, err := r.Fetch(commitGerrit)
+	d, _ := os.Getwd()
+	ti := time.Now()
+	root := filepath.Join(d, "gerrit-"+ti.Format("2006-01-02"))
+
+	_, _, err = r.Fetch(root, commitGerrit)
 	assert.Equal(t, nil, err)
 
 	buf := make([]proto.Format, 0)

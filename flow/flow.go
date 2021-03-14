@@ -15,6 +15,9 @@ package flow
 import (
 	"context"
 	"log"
+	"os"
+	"path/filepath"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -65,16 +68,20 @@ func (f *flow) Run(commit string) ([]proto.Format, error) {
 }
 
 func (f *flow) routine(data interface{}) interface{} {
+	d, _ := os.Getwd()
+	t := time.Now()
+	root := filepath.Join(d, "gerrit-"+t.Format("2006-01-02"))
+
 	commit := data.(string)
 
-	root, files, err := f.cfg.Review.Fetch(commit)
+	dir, files, err := f.cfg.Review.Fetch(root, commit)
 	defer func() { _ = f.cfg.Review.Clean(root) }()
 	if err != nil {
 		log.Println(err)
 		return nil
 	}
 
-	buf, err := f.cfg.Lint.Run(root, files)
+	buf, err := f.cfg.Lint.Run(dir, files)
 	if err != nil {
 		log.Println(err)
 		return nil

@@ -18,7 +18,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -43,20 +42,23 @@ func initHandle(t *testing.T) gerrit {
 
 func TestClean(t *testing.T) {
 	d, _ := os.Getwd()
-	tnow := time.Now()
-	name := filepath.Join(d, "gerrit-"+tnow.Format("2006-01-02"))
-	err := os.Mkdir(name, os.ModePerm)
+	root := filepath.Join(d, "gerrit-test-clean")
+
+	err := os.Mkdir(root, os.ModePerm)
 	assert.Equal(t, nil, err)
 
 	h := initHandle(t)
-	err = h.Clean(name)
+	err = h.Clean(root)
 	assert.Equal(t, nil, err)
 }
 
 func TestFetch(t *testing.T) {
 	h := initHandle(t)
 
-	root, _, err := h.Fetch(commitGerrit)
+	d, _ := os.Getwd()
+	root := filepath.Join(d, "gerrit-test-fetch")
+
+	_, _, err := h.Fetch(root, commitGerrit)
 	assert.Equal(t, nil, err)
 
 	err = h.Clean(root)

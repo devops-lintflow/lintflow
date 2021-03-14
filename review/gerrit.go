@@ -23,7 +23,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 
@@ -47,16 +46,7 @@ func (g *gerrit) Clean(name string) error {
 	return nil
 }
 
-func (g *gerrit) Fetch(commit string) (rname string, flist []string, emsg error) {
-	// Set root
-	d, err := os.Getwd()
-	if err != nil {
-		return "", nil, errors.Wrap(err, "failed to getwd")
-	}
-
-	t := time.Now()
-	root := filepath.Join(d, "gerrit-"+t.Format("2006-01-02"))
-
+func (g *gerrit) Fetch(root, commit string) (rname string, flist []string, emsg error) {
 	// Query commit
 	r, err := g.get(g.urlQuery("commit:"+commit, []string{"CURRENT_REVISION"}, 0))
 	if err != nil {
@@ -172,9 +162,7 @@ func (g *gerrit) Vote(commit string, data []proto.Format) error {
 }
 
 func (g *gerrit) write(dir, file, data string) error {
-	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
-		return errors.Wrap(err, "failed to mkdir")
-	}
+	_ = os.MkdirAll(dir, os.ModePerm)
 
 	f, err := os.Create(filepath.Join(dir, file))
 	if err != nil {
