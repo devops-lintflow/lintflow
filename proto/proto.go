@@ -33,7 +33,7 @@ const (
 const (
 	TypeError = "Error"
 	TypeInfo  = "Info"
-	TypeWarn  = "Warning"
+	TypeWarn  = "Warn"
 )
 
 type Format struct {
