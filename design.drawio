@@ -1,6 +1,6 @@
 <mxfile>
     <diagram id="6hGFLwfOUW9BJ-s0fimq" name="Page-1">
-        <mxGraphModel dx="2489" dy="812" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+        <mxGraphModel dx="2201" dy="707" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -8,7 +8,7 @@
                     <mxGeometry x="140" y="190" width="400" height="120" as="geometry"/>
                 </mxCell>
                 <mxCell id="22" value="" style="rounded=0;whiteSpace=wrap;html=1;dashed=1;" parent="1" vertex="1">
-                    <mxGeometry x="50" y="390" width="580" height="120" as="geometry"/>
+                    <mxGeometry x="-20" y="380" width="720" height="120" as="geometry"/>
                 </mxCell>
                 <mxCell id="2" value="&lt;span&gt;BITBUCKET&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
                     <mxGeometry x="-40" y="30" width="120" height="80" as="geometry"/>
@@ -55,11 +55,11 @@
                         <mxPoint x="530" y="350" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="13" value="LINT LANG&lt;br&gt;(WORKER)" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
-                    <mxGeometry x="210" y="410" width="120" height="80" as="geometry"/>
+                <mxCell id="13" value="LINT JAVA&lt;br&gt;(WORKER)" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="140" y="400" width="120" height="80" as="geometry"/>
                 </mxCell>
                 <mxCell id="15" value="" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;" parent="1" vertex="1">
-                    <mxGeometry x="490" y="410" width="120" height="80" as="geometry"/>
+                    <mxGeometry x="560" y="400" width="120" height="80" as="geometry"/>
                 </mxCell>
                 <mxCell id="23" value="" style="shape=flexArrow;endArrow=classic;startArrow=classic;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;" parent="1" source="22" target="27" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
@@ -73,11 +73,11 @@
                 <mxCell id="25" value="CLI" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
                     <mxGeometry x="350" y="160" width="80" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="31" value="LINT LINUX&lt;br&gt;(WORKER)" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
-                    <mxGeometry x="350" y="410" width="120" height="80" as="geometry"/>
+                <mxCell id="31" value="LINT PYTHON&lt;br&gt;(WORKER)" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="280" y="400" width="120" height="80" as="geometry"/>
                 </mxCell>
-                <mxCell id="32" value="LINT AOSP&lt;br&gt;(WORKER)" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
-                    <mxGeometry x="70" y="410" width="120" height="80" as="geometry"/>
+                <mxCell id="32" value="LINT CPP&lt;br&gt;(WORKER)" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry y="400" width="120" height="80" as="geometry"/>
                 </mxCell>
                 <mxCell id="33" value="&lt;span&gt;GITLAB&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
                     <mxGeometry x="600" y="30" width="120" height="80" as="geometry"/>
@@ -87,6 +87,9 @@
                         <mxPoint x="680" y="250" as="sourcePoint"/>
                         <mxPoint x="730" y="200" as="targetPoint"/>
                     </mxGeometry>
+                </mxCell>
+                <mxCell id="35" value="LINT SHELL&lt;br&gt;(WORKER)" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="420" y="400" width="120" height="80" as="geometry"/>
                 </mxCell>
             </root>
         </mxGraphModel>
