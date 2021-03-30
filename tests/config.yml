@@ -16,8 +16,6 @@ spec:
             - .h
             - .hpp
           name:
-            - message
-            - patch
     - name: lintjava
       host: 127.0.0.1
       port: 9091
@@ -28,8 +26,6 @@ spec:
             - .java
             - .xml
           name:
-            - message
-            - patch
     - name: lintpython
       host: 127.0.0.1
       port: 9092
@@ -39,8 +35,6 @@ spec:
           extension:
             - .py
           name:
-            - message
-            - patch
     - name: lintshell
       host: 127.0.0.1
       port: 9093
@@ -50,8 +44,6 @@ spec:
           extension:
             - .sh
           name:
-            - message
-            - patch
   review:
     - name: gerrit
       host: http://127.0.0.1/
