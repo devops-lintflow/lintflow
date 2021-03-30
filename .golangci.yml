@@ -53,6 +53,7 @@ linters:
     - depguard
     - dogsled
     - errcheck
+    - exportloopref
     - funlen
     - gochecknoinits
     - goconst
@@ -69,7 +70,6 @@ linters:
     - misspell
     - nakedret
     - rowserrcheck
-    - scopelint
     - staticcheck
     - structcheck
     - typecheck

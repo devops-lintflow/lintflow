@@ -48,8 +48,8 @@ func New(cfg *Config) Review {
 		}
 	}
 
-	h, p := reviews[cfg.Name]
-	if !p {
+	h, ok := reviews[cfg.Name]
+	if !ok {
 		h = nil
 	}
 

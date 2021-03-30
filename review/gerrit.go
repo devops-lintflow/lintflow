@@ -129,7 +129,7 @@ func (g *gerrit) Vote(commit string, data []proto.Format) error {
 		c := map[string]interface{}{}
 		for _, item := range data {
 			b := map[string]interface{}{"line": item.Line, "message": item.Details}
-			if _, p := c[item.File]; !p {
+			if _, ok := c[item.File]; !ok {
 				c[item.File] = []map[string]interface{}{b}
 			} else {
 				c[item.File] = append(c[item.File].([]map[string]interface{}), b)
