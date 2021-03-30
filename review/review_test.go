@@ -28,9 +28,9 @@ import (
 )
 
 const (
-	changeGerrit   = 21
-	commitGerrit   = "c5d3440911e06ed4fc60252bd89e7756f9ae67ee"
-	revisionGerrit = 3
+	changeGerrit   = 41
+	commitGerrit   = "8f71e42dbcd8c68d849e483c04670f58621aab9c"
+	revisionGerrit = 1
 )
 
 func initConfig(name string) (*config.Config, error) {
