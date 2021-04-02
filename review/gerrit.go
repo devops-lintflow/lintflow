@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/reviewdog/reviewdog/diff"
 
 	"github.com/craftslab/lintflow/config"
 	"github.com/craftslab/lintflow/proto"
@@ -32,6 +33,11 @@ import (
 
 const (
 	commitMsg = "/COMMIT_MSG"
+)
+
+const (
+	diffSep    = "diff --git"
+	pathPrefix = "b/"
 )
 
 type gerrit struct {
@@ -121,13 +127,33 @@ func (g *gerrit) Fetch(root, commit string) (rname string, flist []string, emsg 
 	return path, files, nil
 }
 
+// nolint:gocyclo
 func (g *gerrit) Vote(commit string, data []proto.Format) error {
-	helper := func(data []proto.Format) (map[string]interface{}, map[string]interface{}, string) {
+	match := func(data proto.Format, diffs []*diff.FileDiff) bool {
+		for _, d := range diffs {
+			if strings.Replace(d.PathNew, pathPrefix, "", 1) != data.File {
+				continue
+			}
+			for _, h := range d.Hunks {
+				for _, l := range h.Lines {
+					if l.Type == diff.LineAdded && l.LnumNew == data.Line {
+						return true
+					}
+				}
+			}
+		}
+		return false
+	}
+
+	build := func(data []proto.Format, diffs []*diff.FileDiff) (map[string]interface{}, map[string]interface{}, string) {
 		if len(data) == 0 {
 			return nil, map[string]interface{}{g.r.Vote.Label: g.r.Vote.Approval}, g.r.Vote.Message
 		}
 		c := map[string]interface{}{}
 		for _, item := range data {
+			if !match(item, diffs) {
+				continue
+			}
 			b := map[string]interface{}{"line": item.Line, "message": item.Details}
 			if _, ok := c[item.File]; !ok {
 				c[item.File] = []map[string]interface{}{b}
@@ -138,23 +164,42 @@ func (g *gerrit) Vote(commit string, data []proto.Format) error {
 		return c, map[string]interface{}{g.r.Vote.Label: g.r.Vote.Disapproval}, g.r.Vote.Message
 	}
 
-	r, err := g.get(g.urlQuery("commit:"+commit, []string{"CURRENT_REVISION"}, 0))
+	// Query commit
+	ret, err := g.get(g.urlQuery("commit:"+commit, []string{"CURRENT_REVISION"}, 0))
 	if err != nil {
 		return errors.Wrap(err, "failed to query")
 	}
 
-	ret, err := g.unmarshalList(r)
+	c, err := g.unmarshalList(ret)
 	if err != nil {
 		return errors.Wrap(err, "failed to unmarshalList")
 	}
 
-	revisions := ret["revisions"].(map[string]interface{})
-	current := revisions[ret["current_revision"].(string)].(map[string]interface{})
+	revisions := c["revisions"].(map[string]interface{})
+	current := revisions[c["current_revision"].(string)].(map[string]interface{})
 
-	comments, labels, message := helper(data)
+	// Get patch
+	ret, err = g.get(g.urlPatch(int(c["_number"].(float64)), int(current["_number"].(float64))))
+	if err != nil {
+		return errors.Wrap(err, "failed to patch")
+	}
+
+	// Parse diff
+	i := bytes.Index(ret, []byte(diffSep))
+	if i < 0 {
+		return errors.Wrap(err, "failed to index")
+	}
+
+	d, err := diff.ParseMultiFile(strings.NewReader(string(ret[i:])))
+	if err != nil {
+		return errors.Wrap(err, "failed to parse")
+	}
+
+	// Review commit
+	comments, labels, message := build(data, d)
 	buf := map[string]interface{}{"comments": comments, "labels": labels, "message": message}
 
-	if err := g.post(g.urlReview(int(ret["_number"].(float64)), int(current["_number"].(float64))), buf); err != nil {
+	if err := g.post(g.urlReview(int(c["_number"].(float64)), int(current["_number"].(float64))), buf); err != nil {
 		return errors.Wrap(err, "failed to review")
 	}
 
