@@ -15,6 +15,7 @@ package review
 import (
 	"bufio"
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -185,12 +186,17 @@ func (g *gerrit) Vote(commit string, data []proto.Format) error {
 	}
 
 	// Parse diff
-	i := bytes.Index(ret, []byte(diffSep))
-	if i < 0 {
-		return errors.Wrap(err, "failed to index")
+	dec := make([]byte, base64.StdEncoding.DecodedLen(len(ret)))
+	if _, err = base64.StdEncoding.Decode(dec, ret); err != nil {
+		return errors.Wrap(err, "failed to decode")
 	}
 
-	d, err := diff.ParseMultiFile(strings.NewReader(string(ret[i:])))
+	i := bytes.Index(dec, []byte(diffSep))
+	if i < 0 {
+		return errors.New("failed to index")
+	}
+
+	d, err := diff.ParseMultiFile(bytes.NewReader(dec[i:]))
 	if err != nil {
 		return errors.Wrap(err, "failed to parse")
 	}
