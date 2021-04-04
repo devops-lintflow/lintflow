@@ -37,6 +37,7 @@ const (
 )
 
 const (
+	diffBin    = "Binary files differ"
 	diffSep    = "diff --git"
 	pathPrefix = "b/"
 )
@@ -191,18 +192,26 @@ func (g *gerrit) Vote(commit string, data []proto.Format) error {
 		return errors.Wrap(err, "failed to decode")
 	}
 
-	i := bytes.Index(dec, []byte(diffSep))
-	if i < 0 {
+	index := bytes.Index(dec, []byte(diffSep))
+	if index < 0 {
 		return errors.New("failed to index")
 	}
 
-	d, err := diff.ParseMultiFile(bytes.NewReader(dec[i:]))
+	var b []byte
+
+	for _, item := range bytes.SplitAfter(dec[index:], []byte(diffSep)) {
+		if !bytes.Contains(item, []byte(diffBin)) {
+			b = bytes.Join([][]byte{b, item}, []byte(""))
+		}
+	}
+
+	diffs, err := diff.ParseMultiFile(bytes.NewReader(b))
 	if err != nil {
 		return errors.Wrap(err, "failed to parse")
 	}
 
 	// Review commit
-	comments, labels, message := build(data, d)
+	comments, labels, message := build(data, diffs)
 	buf := map[string]interface{}{"comments": comments, "labels": labels, "message": message}
 
 	if err := g.post(g.urlReview(int(c["_number"].(float64)), int(current["_number"].(float64))), buf); err != nil {
