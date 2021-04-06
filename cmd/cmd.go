@@ -37,36 +37,38 @@ var (
 	outputFile = app.Flag("output-file", "Output file (.json|.txt|.xlsx)").Default().String()
 )
 
-func Run() {
+func Run() error {
 	kingpin.MustParse(app.Parse(os.Args[1:]))
 
 	c, err := initConfig(*configFile)
 	if err != nil {
-		log.Fatalf("failed to init config: %v", err)
+		return errors.Wrap(err, "failed to init config")
 	}
 
 	r, err := initReview(c)
 	if err != nil {
-		log.Fatalf("failed to init review: %v", err)
+		return errors.Wrap(err, "failed to init review")
 	}
 
 	l, err := initLint(c)
 	if err != nil {
-		log.Fatalf("failed to init lint: %v", err)
+		return errors.Wrap(err, "failed to init lint")
 	}
 
 	w, err := initWriter(c)
 	if err != nil {
-		log.Fatalf("failed to init writer: %v", err)
+		return errors.Wrap(err, "failed to init writer")
 	}
 
 	log.Println("flow running")
 
 	if err := runFlow(c, r, l, w); err != nil {
-		log.Fatalf("failed to run flow: %v", err)
+		return errors.Wrap(err, "failed to run flow")
 	}
 
 	log.Println("flow exiting")
+
+	return nil
 }
 
 func initConfig(name string) (*config.Config, error) {

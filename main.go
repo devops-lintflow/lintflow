@@ -19,7 +19,9 @@ import (
 )
 
 func main() {
-	cmd.Run()
+	if err := cmd.Run(); err != nil {
+		os.Exit(1)
+	}
 
 	os.Exit(0)
 }
