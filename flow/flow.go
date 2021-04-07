@@ -51,20 +51,24 @@ func DefaultConfig() *Config {
 }
 
 func (f *flow) Run(commit string) ([]proto.Format, error) {
+	var err error
+	var ret []proto.Format
+
 	buf, err := runtime.Run(f.routine, []interface{}{commit})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to run")
 	}
 
-	var ret []proto.Format
-
 	for _, val := range buf {
 		if val != nil {
 			ret = append(ret, val.([]proto.Format)...)
+		} else {
+			err = errors.New("invalid data")
+			break
 		}
 	}
 
-	return ret, nil
+	return ret, err
 }
 
 func (f *flow) routine(data interface{}) interface{} {
