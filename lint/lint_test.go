@@ -30,7 +30,7 @@ func TestFilter(t *testing.T) {
 	var l lint
 
 	f.Include.Extension = []string{".java", ".xml"}
-	f.Include.Name = []string{"message", "patch"}
+	f.Include.File = []string{"message", "patch"}
 
 	b := []string{".ext"}
 	ret := l.filter(f, b)

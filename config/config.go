@@ -42,7 +42,7 @@ type Filter struct {
 
 type Include struct {
 	Extension []string `yaml:"extension"`
-	Name      []string `yaml:"name"`
+	File      []string `yaml:"file"`
 }
 
 type Review struct {

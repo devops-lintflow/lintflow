@@ -96,7 +96,7 @@ spec:
             - .cpp
             - .h
             - .hpp
-          name:
+          file:
             - message
             - patch
     - name: lintjava
@@ -108,7 +108,7 @@ spec:
           extension:
             - .java
             - .xml
-          name:
+          file:
             - message
             - patch
     - name: lintpython
@@ -119,7 +119,7 @@ spec:
         include:
           extension:
             - .py
-          name:
+          file:
             - message
             - patch
     - name: lintshell
@@ -130,7 +130,7 @@ spec:
         include:
           extension:
             - .sh
-          name:
+          file:
             - message
             - patch
   review:

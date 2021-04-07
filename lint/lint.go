@@ -113,9 +113,9 @@ func (l *lint) filter(f config.Filter, data []string) []string {
 		return match
 	}
 
-	matchName := func(data string) bool {
+	matchFile := func(data string) bool {
 		match := false
-		for _, val := range f.Include.Name {
+		for _, val := range f.Include.File {
 			if val == strings.TrimSuffix(data, proto.Base64Content) {
 				match = true
 				break
@@ -127,7 +127,7 @@ func (l *lint) filter(f config.Filter, data []string) []string {
 	var buf []string
 
 	for _, val := range data {
-		if matchExtension(val) || matchName(val) {
+		if matchExtension(val) || matchFile(val) {
 			buf = append(buf, val)
 		}
 	}
