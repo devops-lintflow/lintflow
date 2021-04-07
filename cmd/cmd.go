@@ -153,9 +153,12 @@ func runFlow(_ *config.Config, r review.Review, l lint.Lint, w writer.Writer) er
 		if _, err = os.Stat(*outputFile); err == nil {
 			return errors.New("file already exists")
 		}
-
-		if err = w.Run(*outputFile, buf); err != nil {
-			return errors.Wrap(err, "failed to run writer")
+		if len(buf) != 0 {
+			if err = w.Run(*outputFile, buf); err != nil {
+				return errors.Wrap(err, "failed to run writer")
+			}
+		} else {
+			return nil
 		}
 	}
 

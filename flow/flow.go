@@ -62,11 +62,12 @@ func (f *flow) Run(commit string) ([]proto.Format, error) {
 	err = nil
 
 	for _, val := range buf {
-		if val != nil && len(val.([]proto.Format)) != 0 {
-			ret = append(ret, val.([]proto.Format)...)
-		} else {
+		if val == nil {
 			err = errors.New("invalid data")
 			break
+		}
+		if len(val.([]proto.Format)) != 0 {
+			ret = append(ret, val.([]proto.Format)...)
 		}
 	}
 
