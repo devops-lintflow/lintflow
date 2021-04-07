@@ -59,8 +59,10 @@ func (f *flow) Run(commit string) ([]proto.Format, error) {
 		return nil, errors.Wrap(err, "failed to run")
 	}
 
+	err = nil
+
 	for _, val := range buf {
-		if val != nil {
+		if val != nil && len(val.([]proto.Format)) != 0 {
 			ret = append(ret, val.([]proto.Format)...)
 		} else {
 			err = errors.New("invalid data")
@@ -89,6 +91,10 @@ func (f *flow) routine(data interface{}) interface{} {
 	if err != nil {
 		log.Println(err)
 		return nil
+	}
+
+	if buf == nil {
+		return []proto.Format{}
 	}
 
 	if err := f.cfg.Review.Vote(commit, buf); err != nil {

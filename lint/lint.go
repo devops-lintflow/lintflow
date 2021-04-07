@@ -57,17 +57,21 @@ func (l *lint) Run(root string, files []string) ([]proto.Format, error) {
 		err  error
 	}
 
+	bypass := true
 	ch := make(chan result, len(l.cfg.Lints))
 
 	for _, val := range l.cfg.Lints {
-		go func(root string, files []string, val config.Lint) {
-			f := l.filter(val.Filter, files)
+		ret := l.filter(val.Filter, files)
+		if len(ret) != 0 {
+			bypass = false
+		}
+		go func(f []string, v config.Lint) {
 			if len(f) != 0 {
 				m, e := l.marshal(root, f)
 				if e != nil {
 					ch <- result{nil, errors.Wrap(e, "failed to marshal")}
 				}
-				r, e := l.routine(val.Host, val.Port, val.Timeout, m)
+				r, e := l.routine(v.Host, v.Port, v.Timeout, m)
 				if e != nil {
 					ch <- result{nil, errors.Wrap(e, "failed to routine")}
 				}
@@ -75,7 +79,11 @@ func (l *lint) Run(root string, files []string) ([]proto.Format, error) {
 			} else {
 				ch <- result{[]proto.Format{}, nil}
 			}
-		}(root, files, val)
+		}(ret, val)
+	}
+
+	if bypass {
+		return nil, nil
 	}
 
 	var ret []proto.Format
