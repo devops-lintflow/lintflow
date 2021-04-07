@@ -58,11 +58,7 @@ func (g *gerrit) Clean(name string) error {
 func (g *gerrit) Fetch(root, commit string) (rname string, flist []string, emsg error) {
 	helper := func(data map[string]interface{}) bool {
 		ret := true
-		if val, ok := data["binary"]; ok {
-			if val.(bool) {
-				ret = false
-			}
-		} else if val, ok = data["status"]; ok {
+		if val, ok := data["status"]; ok {
 			if val.(string) == "D" {
 				ret = false
 			}
