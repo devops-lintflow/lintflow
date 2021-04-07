@@ -54,7 +54,22 @@ func (g *gerrit) Clean(name string) error {
 	return nil
 }
 
+// nolint:gocyclo
 func (g *gerrit) Fetch(root, commit string) (rname string, flist []string, emsg error) {
+	helper := func(data map[string]interface{}) bool {
+		ret := true
+		if val, ok := data["binary"]; ok {
+			if val.(bool) {
+				ret = false
+			}
+		} else if val, ok = data["status"]; ok {
+			if val.(string) == "D" {
+				ret = false
+			}
+		}
+		return ret
+	}
+
 	// Query commit
 	r, err := g.get(g.urlQuery("commit:"+commit, []string{"CURRENT_REVISION"}, 0))
 	if err != nil {
@@ -86,7 +101,10 @@ func (g *gerrit) Fetch(root, commit string) (rname string, flist []string, emsg 
 	}
 
 	// Get content
-	for key := range fs {
+	for key, val := range fs {
+		if !helper(val.(map[string]interface{})) {
+			continue
+		}
 		buf, err = g.get(g.urlContent(changeNum, revisionNum, key))
 		if err != nil {
 			return "", nil, errors.Wrap(err, "failed to content")
@@ -118,7 +136,10 @@ func (g *gerrit) Fetch(root, commit string) (rname string, flist []string, emsg 
 	var files []string
 
 	files = append(files, proto.Base64Patch)
-	for key := range fs {
+	for key, val := range fs {
+		if !helper(val.(map[string]interface{})) {
+			continue
+		}
 		if key == commitMsg {
 			files = append(files, proto.Base64Message)
 		} else {
