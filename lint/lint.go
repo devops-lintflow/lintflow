@@ -16,6 +16,7 @@ import (
 	"context"
 	"encoding/json"
 	"io/ioutil"
+	"math"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -192,7 +193,8 @@ func (l *lint) routine(host string, port, timeout int, data []byte) ([]proto.For
 		return ret, nil
 	}
 
-	conn, err := grpc.Dial(host+":"+strconv.Itoa(port), grpc.WithInsecure(), grpc.WithBlock())
+	conn, err := grpc.Dial(host+":"+strconv.Itoa(port), grpc.WithInsecure(), grpc.WithBlock(),
+		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(math.MaxInt32)))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to dial")
 	}
