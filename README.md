@@ -107,6 +107,7 @@ spec:
         include:
           extension:
             - .c
+            - .cc
             - .cpp
             - .h
             - .hpp
