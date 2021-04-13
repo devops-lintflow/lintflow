@@ -180,7 +180,11 @@ func (g *gerrit) Vote(commit string, data []proto.Format) error {
 				c[item.File] = append(c[item.File].([]map[string]interface{}), b)
 			}
 		}
-		return c, map[string]interface{}{g.r.Vote.Label: g.r.Vote.Disapproval}, g.r.Vote.Message
+		if len(c) == 0 {
+			return nil, map[string]interface{}{g.r.Vote.Label: g.r.Vote.Approval}, g.r.Vote.Message
+		} else {
+			return c, map[string]interface{}{g.r.Vote.Label: g.r.Vote.Disapproval}, g.r.Vote.Message
+		}
 	}
 
 	// Query commit
@@ -230,7 +234,6 @@ func (g *gerrit) Vote(commit string, data []proto.Format) error {
 	// Review commit
 	comments, labels, message := build(data, diffs)
 	buf := map[string]interface{}{"comments": comments, "labels": labels, "message": message}
-
 	if err := g.post(g.urlReview(int(c["_number"].(float64)), int(current["_number"].(float64))), buf); err != nil {
 		return errors.Wrap(err, "failed to review")
 	}
