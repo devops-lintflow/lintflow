@@ -62,8 +62,8 @@ func (l *lint) Run(root string, files []string) ([]proto.Format, error) {
 	ch := make(chan result, len(l.cfg.Lints))
 
 	for _, val := range l.cfg.Lints {
-		ret := l.filter(val.Filter, files)
-		if len(ret) != 0 {
+		buf := l.filter(val.Filter, files)
+		if len(buf) != 0 {
 			bypass = false
 		}
 		go func(f []string, v config.Lint) {
@@ -80,7 +80,7 @@ func (l *lint) Run(root string, files []string) ([]proto.Format, error) {
 			} else {
 				ch <- result{[]proto.Format{}, nil}
 			}
-		}(ret, val)
+		}(buf, val)
 	}
 
 	if bypass {
