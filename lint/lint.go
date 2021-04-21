@@ -126,6 +126,9 @@ func (l *lint) filter(f config.Filter, repo string, data []string) []string {
 	}
 
 	matchRepo := func(data string) bool {
+		if len(f.Include.Repo) == 0 {
+			return true
+		}
 		match := false
 		for _, val := range f.Include.Repo {
 			if val == data {
