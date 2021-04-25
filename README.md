@@ -202,6 +202,16 @@ spec:
 
 
 
+## Issues
+
+- Fix comments issue with [change.maxComments](https://gerrit-documentation.storage.googleapis.com/Documentation/3.3.3/config-gerrit.html#change.maxComments).
+
+```
+One or more comments were rejected in validation: Exceeding maximum number of comments: 5001 (existing) + 1 (new) > 5000
+```
+
+
+
 ## License
 
 Project License can be found [here](LICENSE).
