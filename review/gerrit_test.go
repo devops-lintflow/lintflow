@@ -21,6 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/craftslab/lintflow/config"
 	"github.com/craftslab/lintflow/proto"
 )
 
@@ -54,12 +55,16 @@ func TestClean(t *testing.T) {
 
 // nolint: dogsled
 func TestFetch(t *testing.T) {
+	match := func(_ *config.Filter, _, _ string) bool {
+		return true
+	}
+
 	h := initHandle(t)
 
 	d, _ := os.Getwd()
 	root := filepath.Join(d, "gerrit-test-fetch")
 
-	_, _, _, err := h.Fetch(root, commitGerrit)
+	_, _, err := h.Fetch(root, commitGerrit, match)
 	assert.Equal(t, nil, err)
 
 	err = h.Clean(root)

@@ -55,26 +55,39 @@ func (g *gerrit) Clean(name string) error {
 }
 
 // nolint:gocyclo
-func (g *gerrit) Fetch(root, commit string) (pname, rname string, flist []string, emsg error) {
-	helper := func(data map[string]interface{}) bool {
-		ret := true
-		if val, ok := data["status"]; ok {
-			if val.(string) == "D" {
-				ret = false
+func (g *gerrit) Fetch(root, commit string, match func(*config.Filter, string, string) bool) (dname string, flist []string, emsg error) {
+	matchFiles := func(repo string, files map[string]interface{}) map[string]interface{} {
+		buf := make(map[string]interface{})
+		for key, val := range files {
+			if match(nil, repo, key) {
+				buf[key] = val
 			}
 		}
-		return ret
+		return buf
+	}
+
+	ignoreDeleted := func(data map[string]interface{}) map[string]interface{} {
+		buf := make(map[string]interface{})
+		for key, val := range data {
+			if v, ok := val.(map[string]interface{})["status"]; ok {
+				if v.(string) == "D" {
+					continue
+				}
+			}
+			buf[key] = val
+		}
+		return buf
 	}
 
 	// Query commit
 	r, err := g.get(g.urlQuery("commit:"+commit, []string{"CURRENT_REVISION"}, 0))
 	if err != nil {
-		return "", "", nil, errors.Wrap(err, "failed to query")
+		return "", nil, errors.Wrap(err, "failed to query")
 	}
 
 	queryRet, err := g.unmarshalList(r)
 	if err != nil {
-		return "", "", nil, errors.Wrap(err, "failed to unmarshalList")
+		return "", nil, errors.Wrap(err, "failed to unmarshalList")
 	}
 
 	revisions := queryRet["revisions"].(map[string]interface{})
@@ -88,22 +101,23 @@ func (g *gerrit) Fetch(root, commit string) (pname, rname string, flist []string
 	// Get files
 	buf, err := g.get(g.urlFiles(changeNum, revisionNum))
 	if err != nil {
-		return "", "", nil, errors.Wrap(err, "failed to files")
+		return "", nil, errors.Wrap(err, "failed to files")
 	}
 
 	fs, err := g.unmarshal(buf)
 	if err != nil {
-		return "", "", nil, errors.Wrap(err, "failed to unmarshal")
+		return "", nil, errors.Wrap(err, "failed to unmarshal")
 	}
 
+	// Match files
+	fs = matchFiles(queryRet["project"].(string), fs)
+	fs = ignoreDeleted(fs)
+
 	// Get content
-	for key, val := range fs {
-		if !helper(val.(map[string]interface{})) {
-			continue
-		}
+	for key := range fs {
 		buf, err = g.get(g.urlContent(changeNum, revisionNum, key))
 		if err != nil {
-			return "", "", nil, errors.Wrap(err, "failed to content")
+			return "", nil, errors.Wrap(err, "failed to content")
 		}
 
 		file := filepath.Base(key) + proto.Base64Content
@@ -113,29 +127,14 @@ func (g *gerrit) Fetch(root, commit string) (pname, rname string, flist []string
 
 		err = g.write(filepath.Join(path, filepath.Dir(key)), file, string(buf))
 		if err != nil {
-			return "", "", nil, errors.Wrap(err, "failed to fetch")
+			return "", nil, errors.Wrap(err, "failed to fetch")
 		}
-	}
-
-	// Get patch
-	buf, err = g.get(g.urlPatch(changeNum, revisionNum))
-	if err != nil {
-		return "", "", nil, errors.Wrap(err, "failed to patch")
-	}
-
-	err = g.write(path, proto.Base64Patch, string(buf))
-	if err != nil {
-		return "", "", nil, errors.Wrap(err, "failed to fetch")
 	}
 
 	// Return files
 	var files []string
 
-	files = append(files, proto.Base64Patch)
-	for key, val := range fs {
-		if !helper(val.(map[string]interface{})) {
-			continue
-		}
+	for key := range fs {
 		if key == commitMsg {
 			files = append(files, proto.Base64Message)
 		} else {
@@ -143,7 +142,7 @@ func (g *gerrit) Fetch(root, commit string) (pname, rname string, flist []string
 		}
 	}
 
-	return path, queryRet["project"].(string), files, nil
+	return path, files, nil
 }
 
 // nolint:gocyclo

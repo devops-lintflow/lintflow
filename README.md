@@ -113,7 +113,6 @@ spec:
             - .hpp
           file:
             - message
-            - patch
           repo:
             - foo
     - name: lintjava
@@ -127,7 +126,6 @@ spec:
             - .xml
           file:
             - message
-            - patch
           repo:
             - foo
     - name: lintpython
@@ -140,7 +138,6 @@ spec:
             - .py
           file:
             - message
-            - patch
           repo:
             - foo
     - name: lintshell
@@ -153,7 +150,6 @@ spec:
             - .sh
           file:
             - message
-            - patch
           repo:
             - foo
   review:

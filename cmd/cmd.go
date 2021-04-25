@@ -121,7 +121,7 @@ func initLint(cfg *config.Config) (lint.Lint, error) {
 	return lint.New(c), nil
 }
 
-func initWriter(cfg *config.Config) (writer.Writer, error) {
+func initWriter(_ *config.Config) (writer.Writer, error) {
 	c := writer.DefaultConfig()
 	if c == nil {
 		return nil, errors.New("failed to config")
@@ -130,16 +130,17 @@ func initWriter(cfg *config.Config) (writer.Writer, error) {
 	return writer.New(c), nil
 }
 
-func runFlow(_ *config.Config, r review.Review, l lint.Lint, w writer.Writer) error {
-	c := flow.DefaultConfig()
-	if c == nil {
+func runFlow(c *config.Config, r review.Review, l lint.Lint, w writer.Writer) error {
+	cfg := flow.DefaultConfig()
+	if cfg == nil {
 		return errors.New("failed to config flow")
 	}
 
-	c.Lint = l
-	c.Review = r
+	cfg.Config = *c
+	cfg.Lint = l
+	cfg.Review = r
 
-	f := flow.New(context.Background(), c)
+	f := flow.New(context.Background(), cfg)
 	if f == nil {
 		return errors.New("failed to new flow")
 	}

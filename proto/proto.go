@@ -27,7 +27,6 @@ package proto
 const (
 	Base64Content = ".base64"
 	Base64Message = "message.base64"
-	Base64Patch   = "patch.base64"
 )
 
 const (

@@ -20,7 +20,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -31,7 +30,7 @@ import (
 )
 
 type Lint interface {
-	Run(root, repo string, files []string) ([]proto.Format, error)
+	Run(root string, files []string, match func(*config.Filter, string, string) bool) ([]proto.Format, error)
 }
 
 type Config struct {
@@ -52,7 +51,17 @@ func DefaultConfig() *Config {
 	return &Config{}
 }
 
-func (l *lint) Run(root, repo string, files []string) ([]proto.Format, error) {
+func (l *lint) Run(root string, files []string, match func(*config.Filter, string, string) bool) ([]proto.Format, error) {
+	helper := func(filter *config.Filter, files []string) []string {
+		var buf []string
+		for _, item := range files {
+			if match(filter, "", item) {
+				buf = append(buf, item)
+			}
+		}
+		return buf
+	}
+
 	type result struct {
 		data []proto.Format
 		err  error
@@ -62,7 +71,7 @@ func (l *lint) Run(root, repo string, files []string) ([]proto.Format, error) {
 	ch := make(chan result, len(l.cfg.Lints))
 
 	for _, val := range l.cfg.Lints {
-		buf := l.filter(val.Filter, repo, files)
+		buf := helper(&val.Filter, files)
 		if len(buf) != 0 {
 			bypass = false
 		}
@@ -100,58 +109,6 @@ func (l *lint) Run(root, repo string, files []string) ([]proto.Format, error) {
 	}
 
 	return ret, nil
-}
-
-func (l *lint) filter(f config.Filter, repo string, data []string) []string {
-	matchExtension := func(data string) bool {
-		match := false
-		for _, val := range f.Include.Extension {
-			if val == filepath.Ext(strings.TrimSuffix(data, proto.Base64Content)) {
-				match = true
-				break
-			}
-		}
-		return match
-	}
-
-	matchFile := func(data string) bool {
-		match := false
-		for _, val := range f.Include.File {
-			if val == strings.TrimSuffix(data, proto.Base64Content) {
-				match = true
-				break
-			}
-		}
-		return match
-	}
-
-	matchRepo := func(data string) bool {
-		if len(f.Include.Repo) == 0 {
-			return true
-		}
-		match := false
-		for _, val := range f.Include.Repo {
-			if val == data {
-				match = true
-				break
-			}
-		}
-		return match
-	}
-
-	if !matchRepo(repo) {
-		return []string{}
-	}
-
-	var buf []string
-
-	for _, val := range data {
-		if matchExtension(val) || matchFile(val) {
-			buf = append(buf, val)
-		}
-	}
-
-	return buf
 }
 
 func (l *lint) marshal(root string, data []string) ([]byte, error) {

@@ -17,10 +17,12 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 
+	"github.com/craftslab/lintflow/config"
 	"github.com/craftslab/lintflow/lint"
 	"github.com/craftslab/lintflow/proto"
 	"github.com/craftslab/lintflow/review"
@@ -32,17 +34,30 @@ type Flow interface {
 }
 
 type Config struct {
+	Config config.Config
 	Lint   lint.Lint
 	Review review.Review
 }
 
 type flow struct {
-	cfg *Config
+	cfg    *Config
+	filter *config.Filter
 }
 
 func New(_ context.Context, cfg *Config) Flow {
+	helper := func(c config.Config) *config.Filter {
+		var buf config.Filter
+		for _, item := range c.Spec.Lint {
+			buf.Include.Extension = append(buf.Include.Extension, item.Filter.Include.Extension...)
+			buf.Include.File = append(buf.Include.File, item.Filter.Include.File...)
+			buf.Include.Repo = append(buf.Include.Repo, item.Filter.Include.Repo...)
+		}
+		return &buf
+	}
+
 	return &flow{
-		cfg: cfg,
+		cfg:    cfg,
+		filter: helper(cfg.Config),
 	}
 }
 
@@ -81,14 +96,14 @@ func (f *flow) routine(data interface{}) interface{} {
 
 	commit := data.(string)
 
-	dir, repo, files, err := f.cfg.Review.Fetch(root, commit)
+	dir, files, err := f.cfg.Review.Fetch(root, commit, f.match)
 	defer func() { _ = f.cfg.Review.Clean(root) }()
 	if err != nil {
 		log.Println(err)
 		return nil
 	}
 
-	buf, err := f.cfg.Lint.Run(dir, repo, files)
+	buf, err := f.cfg.Lint.Run(dir, files, f.match)
 	if err != nil {
 		log.Println(err)
 		return nil
@@ -104,4 +119,50 @@ func (f *flow) routine(data interface{}) interface{} {
 	}
 
 	return buf
+}
+
+func (f *flow) match(filter *config.Filter, repo, file string) bool {
+	matchExtension := func(filter *config.Filter, data string) bool {
+		for _, val := range filter.Include.Extension {
+			if val == filepath.Ext(strings.TrimSuffix(data, proto.Base64Content)) {
+				return true
+			}
+		}
+		return false
+	}
+
+	matchFile := func(filter *config.Filter, data string) bool {
+		for _, val := range filter.Include.File {
+			if val == filepath.Base(strings.TrimSuffix(data, proto.Base64Content)) {
+				return true
+			}
+		}
+		return false
+	}
+
+	matchRepo := func(filter *config.Filter, data string) bool {
+		if len(filter.Include.Repo) == 0 {
+			return true
+		}
+		for _, val := range filter.Include.Repo {
+			if val == data {
+				return true
+			}
+		}
+		return false
+	}
+
+	if filter == nil {
+		filter = f.filter
+	}
+
+	if repo != "" && !matchRepo(filter, repo) {
+		return false
+	}
+
+	if !matchExtension(filter, file) && !matchFile(filter, file) {
+		return false
+	}
+
+	return true
 }
