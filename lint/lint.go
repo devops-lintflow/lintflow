@@ -30,7 +30,7 @@ import (
 )
 
 type Lint interface {
-	Run(root string, files []string, match func(*config.Filter, string, string) bool) ([]proto.Format, error)
+	Run(string, []string, func(*config.Filter, string, string) bool) ([]proto.Format, error)
 }
 
 type Config struct {
