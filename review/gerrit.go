@@ -54,12 +54,18 @@ func (g *gerrit) Clean(name string) error {
 	return nil
 }
 
-// nolint:gocyclo
+// nolint:funlen,gocyclo
 func (g *gerrit) Fetch(root, commit string, match func(*config.Filter, string, string) bool) (dname string, flist []string, emsg error) {
 	matchFiles := func(repo string, files map[string]interface{}) map[string]interface{} {
+		var ret bool
 		buf := make(map[string]interface{})
 		for key, val := range files {
-			if match(nil, repo, key) {
+			if key == commitMsg {
+				ret = match(nil, repo, proto.Base64Message)
+			} else {
+				ret = match(nil, repo, key)
+			}
+			if ret {
 				buf[key] = val
 			}
 		}
