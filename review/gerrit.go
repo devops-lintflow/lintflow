@@ -290,11 +290,11 @@ func (g *gerrit) unmarshalList(data []byte) (map[string]interface{}, error) {
 
 func (g *gerrit) urlContent(change, revision int, name string) string {
 	buf := strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + "/changes/" + strconv.Itoa(change) +
-		"/revisions/" + strconv.Itoa(revision) + "/files/" + url.PathEscape(name) + "/content"
+		"/revisions/" + strconv.Itoa(revision) + "/files/" + url.QueryEscape(name) + "/content"
 
 	if g.r.User != "" && g.r.Pass != "" {
 		buf = strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + "/a/changes/" + strconv.Itoa(change) +
-			"/revisions/" + strconv.Itoa(revision) + "/files/" + url.PathEscape(name) + "/content"
+			"/revisions/" + strconv.Itoa(revision) + "/files/" + url.QueryEscape(name) + "/content"
 	}
 
 	return buf
