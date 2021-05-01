@@ -56,6 +56,19 @@ func (g *gerrit) Clean(name string) error {
 
 // nolint:funlen,gocyclo
 func (g *gerrit) Fetch(root, commit string, match func(*config.Filter, string, string) bool) (dname string, flist []string, emsg error) {
+	filterFiles := func(data map[string]interface{}) map[string]interface{} {
+		buf := make(map[string]interface{})
+		for key, val := range data {
+			if v, ok := val.(map[string]interface{})["status"]; ok {
+				if v.(string) == "D" || v.(string) == "R" {
+					continue
+				}
+			}
+			buf[key] = val
+		}
+		return buf
+	}
+
 	matchFiles := func(repo string, files map[string]interface{}) map[string]interface{} {
 		var ret bool
 		buf := make(map[string]interface{})
@@ -68,19 +81,6 @@ func (g *gerrit) Fetch(root, commit string, match func(*config.Filter, string, s
 			if ret {
 				buf[key] = val
 			}
-		}
-		return buf
-	}
-
-	ignoreDeleted := func(data map[string]interface{}) map[string]interface{} {
-		buf := make(map[string]interface{})
-		for key, val := range data {
-			if v, ok := val.(map[string]interface{})["status"]; ok {
-				if v.(string) == "D" {
-					continue
-				}
-			}
-			buf[key] = val
 		}
 		return buf
 	}
@@ -116,8 +116,8 @@ func (g *gerrit) Fetch(root, commit string, match func(*config.Filter, string, s
 	}
 
 	// Match files
+	fs = filterFiles(fs)
 	fs = matchFiles(queryRet["project"].(string), fs)
-	fs = ignoreDeleted(fs)
 
 	// Get content
 	for key := range fs {
