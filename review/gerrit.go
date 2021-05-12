@@ -175,7 +175,7 @@ func (g *gerrit) Vote(commit string, data []proto.Format) error {
 		}
 		c := map[string]interface{}{}
 		for _, item := range data {
-			if item.File != commitMsg && !match(item, diffs) {
+			if item.Details == "" || (item.File != commitMsg && !match(item, diffs)) {
 				continue
 			}
 			b := map[string]interface{}{"line": item.Line, "message": item.Details}
