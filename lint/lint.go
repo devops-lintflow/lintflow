@@ -30,7 +30,7 @@ import (
 )
 
 type Lint interface {
-	Run(string, []string, func(*config.Filter, string, string) bool) ([]proto.Format, error)
+	Run(string, string, []string, func(*config.Filter, string, string) bool) ([]proto.Format, error)
 }
 
 type Config struct {
@@ -51,11 +51,11 @@ func DefaultConfig() *Config {
 	return &Config{}
 }
 
-func (l *lint) Run(root string, files []string, match func(*config.Filter, string, string) bool) ([]proto.Format, error) {
+func (l *lint) Run(root, repo string, files []string, match func(*config.Filter, string, string) bool) ([]proto.Format, error) {
 	helper := func(filter *config.Filter, files []string) []string {
 		var buf []string
 		for _, item := range files {
-			if match(filter, "", item) {
+			if match(filter, repo, item) {
 				buf = append(buf, item)
 			}
 		}

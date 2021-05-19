@@ -31,7 +31,7 @@ func TestFilter(t *testing.T) {
 		},
 	}
 
-	f := flow{nil, &filter}
+	f := flow{}
 
 	ret := f.match(&filter, "", ".ext")
 	assert.Equal(t, false, ret)
@@ -43,19 +43,19 @@ func TestFilter(t *testing.T) {
 	assert.Equal(t, true, ret)
 
 	ret = f.match(nil, "", ".java")
-	assert.Equal(t, true, ret)
+	assert.Equal(t, false, ret)
 
 	ret = f.match(&filter, "", "foo.java")
 	assert.Equal(t, true, ret)
 
 	ret = f.match(nil, "", "foo.java")
-	assert.Equal(t, true, ret)
+	assert.Equal(t, false, ret)
 
 	ret = f.match(&filter, "", "message")
 	assert.Equal(t, true, ret)
 
 	ret = f.match(nil, "", "message")
-	assert.Equal(t, true, ret)
+	assert.Equal(t, false, ret)
 
 	filter.Include.Repo = []string{"alpha", "beta"}
 
@@ -63,7 +63,7 @@ func TestFilter(t *testing.T) {
 	assert.Equal(t, true, ret)
 
 	ret = f.match(nil, "", "message")
-	assert.Equal(t, true, ret)
+	assert.Equal(t, false, ret)
 
 	ret = f.match(&filter, "foo", "message")
 	assert.Equal(t, false, ret)
@@ -72,5 +72,5 @@ func TestFilter(t *testing.T) {
 	assert.Equal(t, true, ret)
 
 	ret = f.match(nil, "alpha", "message")
-	assert.Equal(t, true, ret)
+	assert.Equal(t, false, ret)
 }

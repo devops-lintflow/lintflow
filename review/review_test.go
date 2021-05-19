@@ -62,10 +62,6 @@ func initConfig(name string) (*config.Config, error) {
 
 // nolint: dogsled
 func TestReview(t *testing.T) {
-	match := func(_ *config.Filter, _, _ string) bool {
-		return true
-	}
-
 	c, err := initConfig("../tests/config.yml")
 	assert.Equal(t, nil, err)
 
@@ -79,7 +75,7 @@ func TestReview(t *testing.T) {
 	ti := time.Now()
 	root := filepath.Join(d, "gerrit-"+ti.Format("2006-01-02"))
 
-	_, _, err = r.Fetch(root, commitGerrit, match)
+	_, _, _, err = r.Fetch(root, commitGerrit)
 	assert.Equal(t, nil, err)
 
 	buf := make([]proto.Format, 0)
