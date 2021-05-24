@@ -169,7 +169,7 @@ func (l *lint) routine(host string, port, timeout int, data []byte) ([]proto.For
 	}
 
 	conn, err := grpc.Dial(host+":"+strconv.Itoa(port), grpc.WithInsecure(), grpc.WithBlock(),
-		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(math.MaxInt32)))
+		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(math.MaxInt32), grpc.MaxCallSendMsgSize(math.MaxInt32)))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to dial")
 	}
