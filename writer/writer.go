@@ -29,7 +29,9 @@ import (
 )
 
 const (
-	sep = ","
+	base = 10
+	perm = 0600
+	sep  = ","
 )
 
 var (
@@ -84,7 +86,7 @@ func (w *writer) writeJson(name string) error {
 		return errors.Wrap(err, "failed to marshal")
 	}
 
-	if err := ioutil.WriteFile(name, b, 0600); err != nil {
+	if err := ioutil.WriteFile(name, b, perm); err != nil {
 		return errors.Wrap(err, "failed to write")
 	}
 
@@ -111,7 +113,7 @@ func (w *writer) writeTxt(name string) error {
 				case reflect.String:
 					c = append(c, f.String())
 				case reflect.Int:
-					c = append(c, strconv.FormatInt(f.Int(), 10))
+					c = append(c, strconv.FormatInt(f.Int(), base))
 				}
 			}
 			buf = append(buf, strings.Join(c, sep))
@@ -159,7 +161,7 @@ func (w *writer) writeXlsx(name string) error {
 				case reflect.String:
 					c = append(c, f.String())
 				case reflect.Int:
-					c = append(c, strconv.FormatInt(f.Int(), 10))
+					c = append(c, strconv.FormatInt(f.Int(), base))
 				}
 			}
 			data = append(data, c)

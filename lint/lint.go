@@ -96,7 +96,7 @@ func (l *lint) Run(root, repo string, files []string, match func(*config.Filter,
 		return nil, nil
 	}
 
-	var ret []proto.Format
+	ret := []proto.Format{}
 
 	for range l.cfg.Lints {
 		r := <-ch
