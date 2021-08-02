@@ -48,7 +48,7 @@ git clone https://github.com/craftslab/lintflow.git
 
 cd lintflow
 docker build --no-cache -f Dockerfile -t craftslab/lintflow:latest .
-docker run -it -v /tmp:/tmp craftslab/lintflow:latest ./bin/lintflow --config-file="./etc/config.yml" --code-review="gerrit" --commit-hash="{hash}" --output-file="/tmp/output.json"
+docker run craftslab/lintflow:latest /lintflow --config-file="/config.yml" --code-review="gerrit" --commit-hash="{hash}" --output-file="/output.json"
 ```
 
 
