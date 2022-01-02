@@ -15,13 +15,13 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.16
+          go-version: 1.17
       - name: Checkout code
         uses: actions/checkout@v2
-      #- name: Check go mod
-      #- run: |
-      #-   go mod tidy
-      #-   git diff --exit-code go.mod
+      - name: Check go mod
+      - run: |
+          - go mod tidy
+          - git diff --exit-code go.mod
   golangci-lint:
     runs-on: ubuntu-latest
     steps:
@@ -36,7 +36,7 @@ jobs:
     strategy:
       matrix:
         golang:
-          - 1.16
+          - 1.17
     steps:
       - uses: actions/checkout@v2
       - name: Install Go
