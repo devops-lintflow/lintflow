@@ -13,7 +13,7 @@
 package review
 
 import (
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -48,7 +48,7 @@ func initConfig(name string) (*config.Config, error) {
 		_ = fi.Close()
 	}()
 
-	buf, err := ioutil.ReadAll(fi)
+	buf, err := io.ReadAll(fi)
 	if err != nil {
 		return c, errors.Wrap(err, "failed to readall")
 	}

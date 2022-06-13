@@ -17,7 +17,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -341,7 +341,7 @@ func (g *gerrit) urlReview(change, revision int) string {
 }
 
 func (g *gerrit) get(_url string) ([]byte, error) {
-	req, err := http.NewRequest(http.MethodGet, _url, nil)
+	req, err := http.NewRequest(http.MethodGet, _url, http.NoBody)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to request")
 	}
@@ -363,7 +363,7 @@ func (g *gerrit) get(_url string) ([]byte, error) {
 		return nil, errors.New("invalid status")
 	}
 
-	data, err := ioutil.ReadAll(rsp.Body)
+	data, err := io.ReadAll(rsp.Body)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read")
 	}
@@ -401,7 +401,7 @@ func (g *gerrit) post(_url string, data map[string]interface{}) error {
 		return errors.New("invalid status")
 	}
 
-	_, err = ioutil.ReadAll(rsp.Body)
+	_, err = io.ReadAll(rsp.Body)
 	if err != nil {
 		return errors.Wrap(err, "failed to read")
 	}

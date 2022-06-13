@@ -15,7 +15,6 @@ package writer
 import (
 	"bufio"
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"reflect"
 	"strconv"
@@ -86,7 +85,7 @@ func (w *writer) writeJson(name string) error {
 		return errors.Wrap(err, "failed to marshal")
 	}
 
-	if err := ioutil.WriteFile(name, b, perm); err != nil {
+	if err := os.WriteFile(name, b, perm); err != nil {
 		return errors.Wrap(err, "failed to write")
 	}
 

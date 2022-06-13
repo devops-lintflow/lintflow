@@ -15,7 +15,7 @@ package lint
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"math"
 	"os"
 	"path/filepath"
@@ -118,7 +118,7 @@ func (l *lint) marshal(root string, data []string) ([]byte, error) {
 			return "", errors.Wrap(err, "failed to open")
 		}
 		defer func() { _ = fi.Close() }()
-		buf, err := ioutil.ReadAll(fi)
+		buf, err := io.ReadAll(fi)
 		if err != nil {
 			return "", errors.Wrap(err, "failed to readall")
 		}

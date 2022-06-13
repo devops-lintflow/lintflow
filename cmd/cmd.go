@@ -14,7 +14,7 @@ package cmd
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 
@@ -86,7 +86,7 @@ func initConfig(name string) (*config.Config, error) {
 		_ = fi.Close()
 	}()
 
-	buf, err := ioutil.ReadAll(fi)
+	buf, err := io.ReadAll(fi)
 	if err != nil {
 		return c, errors.Wrap(err, "failed to readall")
 	}
