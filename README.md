@@ -1,42 +1,32 @@
 # lintflow
 
-[![Actions Status](https://github.com/craftslab/lintflow/workflows/CI/badge.svg?branch=master&event=push)](https://github.com/craftslab/lintflow/actions?query=workflow%3ACI)
-[![Go Report Card](https://goreportcard.com/badge/github.com/craftslab/lintflow)](https://goreportcard.com/report/github.com/craftslab/lintflow)
-[![License](https://img.shields.io/github/license/craftslab/lintflow.svg?color=brightgreen)](https://github.com/craftslab/lintflow/blob/master/LICENSE)
-[![Tag](https://img.shields.io/github/tag/craftslab/lintflow.svg?color=brightgreen)](https://github.com/craftslab/lintflow/tags)
+[![Actions Status](https://github.com/devops-lintflow/lintflow/workflows/ci/badge.svg?branch=main&event=push)](https://github.com/devops-lintflow/lintflow/actions?query=workflow%3Aci)
+[![Go Report Card](https://goreportcard.com/badge/github.com/devops-lintflow/lintflow)](https://goreportcard.com/report/github.com/devops-lintflow/lintflow)
+[![License](https://img.shields.io/github/license/devops-lintflow/lintflow.svg?color=brightgreen)](https://github.com/devops-lintflow/lintflow/blob/main/LICENSE)
+[![Tag](https://img.shields.io/github/tag/devops-lintflow/lintflow.svg?color=brightgreen)](https://github.com/devops-lintflow/lintflow/tags)
 
 
 
 ## Introduction
 
-*lintflow* is a master of lint workers written in Go.
+*lintflow* is a server of lint workers written in Go.
 
-- See *[lintwork](https://github.com/craftslab/lintwork/)* as a worker of *lintflow*.
+- See *[lintwork](https://github.com/devops-lintflow/lintwork/)* as a worker of *lintflow*.
 
 
 
 ## Prerequisites
 
-- Go >= 1.16.0
+- Go >= 1.18.0
 - gRPC >= 1.36.0
-
-
-
-## Build
-
-```bash
-git clone https://github.com/craftslab/lintflow.git
-
-cd lintflow
-make build
-```
 
 
 
 ## Run
 
 ```bash
-./lintflow --config-file="config.yml" --code-review="gerrit" --commit-hash="{hash}" --output-file="output.json"
+make build
+./bin/lintflow --config-file="config.yml" --code-review="gerrit" --commit-hash="{hash}" --output-file="output.json"
 ```
 
 
@@ -44,9 +34,6 @@ make build
 ## Docker
 
 ```bash
-git clone https://github.com/craftslab/lintflow.git
-
-cd lintflow
 docker build --no-cache -f Dockerfile -t craftslab/lintflow:latest .
 docker run craftslab/lintflow:latest /lintflow --config-file="/config.yml" --code-review="gerrit" --commit-hash="{hash}" --output-file="/output.json"
 ```
@@ -88,13 +75,13 @@ Flags:
 
 ## Settings
 
-*lintflow* parameters can be set in the directory [config](https://github.com/craftslab/lintflow/blob/master/config).
+*lintflow* parameters can be set in the directory [config](https://github.com/devops-lintflow/lintflow/blob/main/config).
 
-An example of configuration in [config.yml](https://github.com/craftslab/lintflow/blob/master/config/config.yml):
+An example of configuration in [config.yml](https://github.com/devops-lintflow/lintflow/blob/main/config/config.yml):
 
 ```yaml
 apiVersion: v1
-kind: master
+kind: server
 metadata:
   name: lintflow
 spec:
