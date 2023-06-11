@@ -17,7 +17,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/craftslab/lintflow/config"
+	"github.com/devops-lintflow/lintflow/config"
 )
 
 // nolint: funlen

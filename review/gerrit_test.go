@@ -21,7 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/craftslab/lintflow/proto"
+	"github.com/devops-lintflow/lintflow/proto"
 )
 
 func initHandle(t *testing.T) gerrit {

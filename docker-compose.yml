@@ -2,25 +2,25 @@ version: '3'
 
 services:
   lintcpp:
-    image: craftslab/lintwork:latest
+    image: devops-lintflow/lintwork:latest
     network_mode: "host"
     volumes:
       - /tmp:/tmp
     command: ./lintwork --config-file="/tmp/lintcpp.yml" --listen-url="127.0.0.1:9090"
   lintjava:
-    image: craftslab/lintwork:latest
+    image: devops-lintflow/lintwork:latest
     network_mode: "host"
     volumes:
       - /tmp:/tmp
     command: ./lintwork --config-file="/tmp/lintjava.yml" --listen-url="127.0.0.1:9091"
   lintpython:
-    image: craftslab/lintwork:latest
+    image: devops-lintflow/lintwork:latest
     network_mode: "host"
     volumes:
       - /tmp:/tmp
     command: ./lintwork --config-file="/tmp/lintpython.yml" --listen-url="127.0.0.1:9092"
   lintshell:
-    image: craftslab/lintwork:latest
+    image: devops-lintflow/lintwork:latest
     network_mode: "host"
     volumes:
       - /tmp:/tmp

@@ -34,8 +34,8 @@ make build
 ## Docker
 
 ```bash
-docker build --no-cache -f Dockerfile -t craftslab/lintflow:latest .
-docker run craftslab/lintflow:latest /lintflow --config-file="/config.yml" --code-review="gerrit" --commit-hash="{hash}" --output-file="/output.json"
+docker build --no-cache -f Dockerfile -t devops-lintflow/lintflow:latest .
+docker run devops-lintflow/lintflow:latest /lintflow --config-file="/config.yml" --code-review="gerrit" --commit-hash="{hash}" --output-file="/output.json"
 ```
 
 
@@ -68,7 +68,7 @@ Flags:
   --code-review=CODE-REVIEW  Code review (bitbucket|gerrit|gitee|github|gitlab)
   --commit-hash=COMMIT-HASH  Commit hash (SHA-1)
   --config-file=CONFIG-FILE  Config file (.yml)
-  --output-file=OUTPUT-FILE  Output file (.json|.txt|.xlsx)
+  --output-file=OUTPUT-FILE  Output file (.json|.txt)
 ```
 
 

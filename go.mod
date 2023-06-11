@@ -1,18 +1,27 @@
-module github.com/craftslab/lintflow
+module github.com/devops-lintflow/lintflow
 
-go 1.16
+go 1.18
 
 require (
-	github.com/360EntSecGroup-Skylar/excelize/v2 v2.3.2
-	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751 // indirect
-	github.com/alecthomas/units v0.0.0-20210208195552-ff826a37aa15 // indirect
-	github.com/golang/protobuf v1.5.2
+	github.com/alecthomas/kingpin/v2 v2.3.2
+	github.com/golang/protobuf v1.5.3
 	github.com/pkg/errors v0.9.1
-	github.com/reviewdog/reviewdog v0.11.0
-	github.com/stretchr/testify v1.7.0
-	go.uber.org/goleak v1.1.10
-	google.golang.org/grpc v1.36.0
-	google.golang.org/protobuf v1.26.0
-	gopkg.in/alecthomas/kingpin.v2 v2.2.6
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
+	github.com/reviewdog/reviewdog v0.14.1
+	github.com/stretchr/testify v1.8.2
+	go.uber.org/goleak v1.2.1
+	google.golang.org/grpc v1.55.0
+	google.golang.org/protobuf v1.30.0
+	gopkg.in/yaml.v3 v3.0.1
+)
+
+require (
+	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/kr/text v0.2.0 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/xhit/go-str2duration/v2 v2.1.0 // indirect
+	golang.org/x/net v0.9.0 // indirect
+	golang.org/x/sys v0.7.0 // indirect
+	golang.org/x/text v0.9.0 // indirect
+	google.golang.org/genproto v0.0.0-20230306155012-7f2fa6fef1f4 // indirect
 )

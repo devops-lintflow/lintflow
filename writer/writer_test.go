@@ -18,7 +18,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/craftslab/lintflow/proto"
+	"github.com/devops-lintflow/lintflow/proto"
 )
 
 var (
@@ -59,23 +59,6 @@ func TestWriteTxt(t *testing.T) {
 	w.data[1] = fileContent
 
 	err := w.writeTxt(name)
-	defer func(name string) { _ = os.Remove(name) }(name)
-
-	assert.Equal(t, nil, err)
-}
-
-func TestWriteXlsx(t *testing.T) {
-	name := "output.xlsx"
-
-	w := &writer{
-		cfg: DefaultConfig(),
-	}
-
-	w.data = make([]proto.Format, 2)
-	w.data[0] = fileContent
-	w.data[1] = fileContent
-
-	err := w.writeXlsx(name)
 	defer func(name string) { _ = os.Remove(name) }(name)
 
 	assert.Equal(t, nil, err)

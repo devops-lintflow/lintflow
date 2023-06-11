@@ -21,10 +21,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/360EntSecGroup-Skylar/excelize/v2"
 	"github.com/pkg/errors"
 
-	"github.com/craftslab/lintflow/proto"
+	"github.com/devops-lintflow/lintflow/proto"
 )
 
 const (
@@ -67,8 +66,6 @@ func (w *writer) Run(name string, data []proto.Format) error {
 		err = w.writeJson(name)
 	} else if strings.HasSuffix(name, ".txt") {
 		err = w.writeTxt(name)
-	} else if strings.HasSuffix(name, ".xlsx") {
-		err = w.writeXlsx(name)
 	} else {
 		return errors.New("invalid suffix")
 	}
@@ -137,83 +134,6 @@ func (w *writer) writeTxt(name string) error {
 	defer func() {
 		_ = b.Flush()
 	}()
-
-	return nil
-}
-
-func (w *writer) writeXlsx(name string) error {
-	helper := func() ([]interface{}, [][]interface{}) {
-		var head []interface{}
-		var data [][]interface{}
-
-		r := reflect.TypeOf(proto.Format{})
-		for i := 0; i < r.NumField(); i++ {
-			head = append(head, strings.ToUpper(r.Field(i).Tag.Get("json")))
-		}
-
-		for _, val := range w.data {
-			var c []interface{}
-			v := reflect.ValueOf(val)
-			for i := 0; i < v.NumField(); i++ {
-				f := v.Field(i)
-				switch f.Kind() {
-				case reflect.String:
-					c = append(c, f.String())
-				case reflect.Int:
-					c = append(c, strconv.FormatInt(f.Int(), base))
-				}
-			}
-			data = append(data, c)
-		}
-
-		return head, data
-	}
-
-	f := excelize.NewFile()
-
-	write := func(row, col string, style, data interface{}) error {
-		s, err := f.NewStyle(style)
-		if err != nil {
-			return errors.Wrap(err, "failed to new style")
-		}
-
-		if err := f.SetCellStyle(sheetName, "A"+row, col+row, s); err != nil {
-			return errors.Wrap(err, "failed to set style")
-		}
-
-		if err := f.SetSheetRow(sheetName, "A"+row, data); err != nil {
-			return errors.Wrap(err, "failed to set row")
-		}
-
-		return nil
-	}
-
-	index := f.NewSheet(sheetName)
-
-	if err := f.SetPanes(sheetName, `{"freeze":true,"split":true,"y_split":1}`); err != nil {
-		return errors.Wrap(err, "failed to set pane")
-	}
-
-	head, data := helper()
-
-	style := `{"alignment":{"horizontal":"center","vertical":"center"},"font":{"bold":true}}`
-	if err := write("1", "D", style, &head); err != nil {
-		return errors.Wrap(err, "failed to write head")
-	}
-
-	style = `{"alignment":{"horizontal":"center","vertical":"center"},"font":{"bold":false}}`
-	offset := 2
-	for index := range data {
-		if err := write(strconv.Itoa(index+offset), "D", style, &data[index]); err != nil {
-			return errors.Wrap(err, "failed to write data")
-		}
-	}
-
-	f.SetActiveSheet(index)
-
-	if err := f.SaveAs(name); err != nil {
-		return errors.Wrap(err, "failed to save file")
-	}
 
 	return nil
 }

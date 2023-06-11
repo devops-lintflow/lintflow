@@ -1,4 +1,4 @@
 #!/bin/bash
 
-docker pull craftslab/gerritdocker:test-lintflow
-docker run --rm -d -p 8080:8080 -p 29418:29418 craftslab/gerritdocker:test-lintflow run
+docker pull devops-lintflow/gerritdocker:test-lintflow
+docker run --rm -d -p 8080:8080 -p 29418:29418 devops-lintflow/gerritdocker:test-lintflow run

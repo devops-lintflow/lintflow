@@ -15,7 +15,7 @@ package main
 import (
 	"os"
 
-	"github.com/craftslab/lintflow/cmd"
+	"github.com/devops-lintflow/lintflow/cmd"
 )
 
 func main() {

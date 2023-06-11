@@ -18,15 +18,15 @@ import (
 	"log"
 	"os"
 
+	"github.com/alecthomas/kingpin/v2"
 	"github.com/pkg/errors"
-	"gopkg.in/alecthomas/kingpin.v2"
 	"gopkg.in/yaml.v3"
 
-	"github.com/craftslab/lintflow/config"
-	"github.com/craftslab/lintflow/flow"
-	"github.com/craftslab/lintflow/lint"
-	"github.com/craftslab/lintflow/review"
-	"github.com/craftslab/lintflow/writer"
+	"github.com/devops-lintflow/lintflow/config"
+	"github.com/devops-lintflow/lintflow/flow"
+	"github.com/devops-lintflow/lintflow/lint"
+	"github.com/devops-lintflow/lintflow/review"
+	"github.com/devops-lintflow/lintflow/writer"
 )
 
 var (
@@ -34,7 +34,7 @@ var (
 	codeReview = app.Flag("code-review", "Code review (bitbucket|gerrit|gitee|github|gitlab)").Required().String()
 	commitHash = app.Flag("commit-hash", "Commit hash (SHA-1)").Required().String()
 	configFile = app.Flag("config-file", "Config file (.yml)").Required().String()
-	outputFile = app.Flag("output-file", "Output file (.json|.txt|.xlsx)").Default().String()
+	outputFile = app.Flag("output-file", "Output file (.json|.txt)").Default().String()
 )
 
 func Run() error {

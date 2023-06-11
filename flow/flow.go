@@ -22,11 +22,11 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/craftslab/lintflow/config"
-	"github.com/craftslab/lintflow/lint"
-	"github.com/craftslab/lintflow/proto"
-	"github.com/craftslab/lintflow/review"
-	"github.com/craftslab/lintflow/runtime"
+	"github.com/devops-lintflow/lintflow/config"
+	"github.com/devops-lintflow/lintflow/lint"
+	"github.com/devops-lintflow/lintflow/proto"
+	"github.com/devops-lintflow/lintflow/review"
+	"github.com/devops-lintflow/lintflow/runtime"
 )
 
 type Flow interface {

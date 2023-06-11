@@ -25,8 +25,8 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 
-	"github.com/craftslab/lintflow/config"
-	"github.com/craftslab/lintflow/proto"
+	"github.com/devops-lintflow/lintflow/config"
+	"github.com/devops-lintflow/lintflow/proto"
 )
 
 type Lint interface {
@@ -168,6 +168,7 @@ func (l *lint) routine(host string, port, timeout int, data []byte) ([]proto.For
 		return ret, nil
 	}
 
+	// nolint: staticcheck
 	conn, err := grpc.Dial(host+":"+strconv.Itoa(port), grpc.WithInsecure(), grpc.WithBlock(),
 		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(math.MaxInt32), grpc.MaxCallSendMsgSize(math.MaxInt32)))
 	if err != nil {

@@ -15,8 +15,8 @@ package review
 import (
 	"github.com/pkg/errors"
 
-	"github.com/craftslab/lintflow/config"
-	"github.com/craftslab/lintflow/proto"
+	"github.com/devops-lintflow/lintflow/config"
+	"github.com/devops-lintflow/lintflow/proto"
 )
 
 const (

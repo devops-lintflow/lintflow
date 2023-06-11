@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v3"
 
-	"github.com/craftslab/lintflow/config"
-	"github.com/craftslab/lintflow/proto"
+	"github.com/devops-lintflow/lintflow/config"
+	"github.com/devops-lintflow/lintflow/proto"
 )
 
 const (

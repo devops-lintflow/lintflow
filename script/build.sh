@@ -3,7 +3,7 @@
 build=$(date +%FT%T%z)
 version="$1"
 
-ldflags="-s -w -X github.com/craftslab/lintflow/config.Build=$build -X github.com/craftslab/lintflow/config.Version=$version"
+ldflags="-s -w -X github.com/devops-lintflow/lintflow/config.Build=$build -X github.com/devops-lintflow/lintflow/config.Version=$version"
 target="lintflow"
 
 go env -w GOPROXY=https://goproxy.cn,direct
