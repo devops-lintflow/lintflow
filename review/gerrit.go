@@ -134,12 +134,15 @@ func (g *gerrit) Fetch(root, commit string) (dname, rname string, flist []string
 	return path, queryRet["project"].(string), files, nil
 }
 
-// nolint:gocyclo
+// nolint:funlen,gocyclo
 func (g *gerrit) Vote(commit string, data []proto.Format) error {
 	match := func(data proto.Format, diffs []*diff.FileDiff) bool {
 		for _, d := range diffs {
 			if strings.Replace(d.PathNew, pathPrefix, "", 1) != data.File {
 				continue
+			}
+			if data.Line <= 0 {
+				return true
 			}
 			for _, h := range d.Hunks {
 				for _, l := range h.Lines {
@@ -161,7 +164,11 @@ func (g *gerrit) Vote(commit string, data []proto.Format) error {
 			if item.Details == "" || (item.File != commitMsg && !match(item, diffs)) {
 				continue
 			}
-			b := map[string]interface{}{"line": item.Line, "message": item.Details}
+			l := item.Line
+			if l <= 0 {
+				l = 1
+			}
+			b := map[string]interface{}{"line": l, "message": item.Details}
 			if _, ok := c[item.File]; !ok {
 				c[item.File] = []map[string]interface{}{b}
 			} else {

@@ -51,6 +51,7 @@ func DefaultConfig() *Config {
 	return &Config{}
 }
 
+// nolint:gosec
 func (l *lint) Run(root, repo string, files []string, match func(*config.Filter, string, string) bool) ([]proto.Format, error) {
 	helper := func(filter *config.Filter, files []string) []string {
 		var buf []string
