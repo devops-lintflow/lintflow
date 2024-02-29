@@ -14,9 +14,12 @@ package review
 
 import (
 	"encoding/base64"
+	"encoding/json"
+	"fmt"
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -64,6 +67,26 @@ func TestFetch(t *testing.T) {
 
 	err = h.Clean(root)
 	assert.Equal(t, nil, err)
+}
+
+// nolint: dogsled
+func TestQuery(t *testing.T) {
+	var buf []interface{}
+	var err error
+	var ret []byte
+
+	r := initHandle(t)
+
+	buf, err = r.Query("change:"+strconv.Itoa(changeGerrit), 0)
+	assert.Equal(t, nil, err)
+
+	ret, _ = json.Marshal(buf)
+	fmt.Println(string(ret))
+
+	buf, err = r.Query(queryAfter+" "+queryBefore, 0)
+	assert.Equal(t, nil, err)
+
+	fmt.Println(len(buf))
 }
 
 // nolint: dogsled

@@ -17,8 +17,7 @@
 
 ## Prerequisites
 
-- Go >= 1.18.0
-- gRPC >= 1.36.0
+- Go >= 1.22.0
 
 
 
@@ -85,11 +84,12 @@ kind: server
 metadata:
   name: lintflow
 spec:
+  flow:
+    timeout: 120s
   lint:
     - name: lintcpp
       host: 127.0.0.1
       port: 9090
-      timeout: 300
       filter:
         include:
           extension:
@@ -105,7 +105,6 @@ spec:
     - name: lintjava
       host: 127.0.0.1
       port: 9091
-      timeout: 300
       filter:
         include:
           extension:
@@ -118,7 +117,6 @@ spec:
     - name: lintpython
       host: 127.0.0.1
       port: 9092
-      timeout: 300
       filter:
         include:
           extension:
@@ -130,7 +128,6 @@ spec:
     - name: lintshell
       host: 127.0.0.1
       port: 9093
-      timeout: 300
       filter:
         include:
           extension:

@@ -13,6 +13,7 @@
 package runtime
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -22,12 +23,12 @@ import (
 func TestRunRuntime(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
-	op := func(req interface{}) interface{} {
+	op := func(ctx context.Context, req interface{}) interface{} {
 		return nil
 	}
 
 	var req []interface{}
 
-	_, err := Run(op, req)
+	_, err := Run(context.Background(), op, req)
 	assert.Equal(t, nil, err)
 }

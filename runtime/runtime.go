@@ -12,19 +12,23 @@
 
 package runtime
 
-type Operation func(req interface{}) interface{}
+import (
+	"context"
+)
+
+type Operation func(context.Context, interface{}) interface{}
 
 type bundle struct {
 	req  interface{}
 	resp chan interface{}
 }
 
-func Run(op Operation, req []interface{}) ([]interface{}, error) {
+func Run(ctx context.Context, op Operation, req []interface{}) ([]interface{}, error) {
 	helper := func(op Operation) (chan *bundle, chan bool) {
 		data := make(chan *bundle)
 		quit := make(chan bool)
 
-		go routine(op, data, quit)
+		go routine(ctx, op, data, quit)
 
 		return data, quit
 	}
@@ -51,17 +55,17 @@ func Run(op Operation, req []interface{}) ([]interface{}, error) {
 	return buf, nil
 }
 
-func routine(op Operation, data chan *bundle, quit chan bool) {
+func routine(ctx context.Context, op Operation, data chan *bundle, quit chan bool) {
 	for {
 		select {
 		case buf := <-data:
-			go operation(op, buf)
+			go operation(ctx, op, buf)
 		case <-quit:
 			return
 		}
 	}
 }
 
-func operation(op Operation, data *bundle) {
-	data.resp <- op(data.req)
+func operation(ctx context.Context, op Operation, data *bundle) {
+	data.resp <- op(ctx, data.req)
 }

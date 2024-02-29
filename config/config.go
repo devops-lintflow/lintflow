@@ -24,16 +24,20 @@ type MetaData struct {
 }
 
 type Spec struct {
+	Flow   Flow     `yaml:"flow"`
 	Lint   []Lint   `yaml:"lint"`
 	Review []Review `yaml:"review"`
 }
 
+type Flow struct {
+	Timeout string `yaml:"timeout"`
+}
+
 type Lint struct {
-	Filter  Filter `yaml:"filter"`
-	Host    string `yaml:"host"`
-	Name    string `yaml:"name"`
-	Port    int    `yaml:"port"`
-	Timeout int    `yaml:"timeout"`
+	Filter Filter `yaml:"filter"`
+	Host   string `yaml:"host"`
+	Name   string `yaml:"name"`
+	Port   int    `yaml:"port"`
 }
 
 type Filter struct {

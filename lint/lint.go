@@ -20,17 +20,17 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/devops-lintflow/lintflow/config"
 	"github.com/devops-lintflow/lintflow/proto"
 )
 
 type Lint interface {
-	Run(string, string, []string, func(*config.Filter, string, string) bool) ([]proto.Format, error)
+	Run(context.Context, string, string, []string, func(*config.Filter, string, string) bool) ([]proto.Format, error)
 }
 
 type Config struct {
@@ -52,7 +52,8 @@ func DefaultConfig() *Config {
 }
 
 // nolint:gosec
-func (l *lint) Run(root, repo string, files []string, match func(*config.Filter, string, string) bool) ([]proto.Format, error) {
+func (l *lint) Run(ctx context.Context, root, repo string, files []string,
+	match func(*config.Filter, string, string) bool) ([]proto.Format, error) {
 	helper := func(filter *config.Filter, files []string) []string {
 		var buf []string
 		for _, item := range files {
@@ -76,28 +77,30 @@ func (l *lint) Run(root, repo string, files []string, match func(*config.Filter,
 		if len(buf) != 0 {
 			bypass = false
 		}
-		go func(f []string, v config.Lint) {
+		go func(ctx context.Context, f []string, v config.Lint) {
 			if len(f) != 0 {
 				m, e := l.marshal(root, f)
 				if e != nil {
 					ch <- result{nil, errors.Wrap(e, "failed to marshal")}
+					return
 				}
-				r, e := l.routine(v.Host, v.Port, v.Timeout, m)
+				r, e := l.routine(ctx, v.Host, v.Port, m)
 				if e != nil {
 					ch <- result{nil, errors.Wrap(e, "failed to routine")}
+					return
 				}
 				ch <- result{r, nil}
 			} else {
 				ch <- result{[]proto.Format{}, nil}
 			}
-		}(buf, val)
+		}(ctx, buf, val)
 	}
 
 	if bypass {
 		return nil, nil
 	}
 
-	ret := []proto.Format{}
+	var ret []proto.Format
 
 	for range l.cfg.Lints {
 		r := <-ch
@@ -156,7 +159,7 @@ func (l *lint) marshal(root string, data []string) ([]byte, error) {
 	return ret, nil
 }
 
-func (l *lint) routine(host string, port, timeout int, data []byte) ([]proto.Format, error) {
+func (l *lint) routine(ctx context.Context, host string, port int, data []byte) ([]proto.Format, error) {
 	helper := func(data string) ([]proto.Format, error) {
 		var buf map[string][]proto.Format
 		if err := json.Unmarshal([]byte(data), &buf); err != nil {
@@ -170,7 +173,9 @@ func (l *lint) routine(host string, port, timeout int, data []byte) ([]proto.For
 	}
 
 	// nolint: staticcheck
-	conn, err := grpc.Dial(host+":"+strconv.Itoa(port), grpc.WithInsecure(), grpc.WithBlock(),
+	conn, err := grpc.DialContext(ctx, host+":"+strconv.Itoa(port),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithBlock(),
 		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(math.MaxInt32), grpc.MaxCallSendMsgSize(math.MaxInt32)))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to dial")
@@ -178,9 +183,6 @@ func (l *lint) routine(host string, port, timeout int, data []byte) ([]proto.For
 	defer func() { _ = conn.Close() }()
 
 	client := NewLintProtoClient(conn)
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
-	defer cancel()
 
 	reply, err := client.SendLint(ctx, &LintRequest{Message: string(data)})
 	if err != nil {

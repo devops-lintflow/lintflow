@@ -17,6 +17,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"time"
 
 	"github.com/alecthomas/kingpin/v2"
 	"github.com/pkg/errors"
@@ -29,6 +30,10 @@ import (
 	"github.com/devops-lintflow/lintflow/writer"
 )
 
+const (
+	Timeout = 120 * time.Second
+)
+
 var (
 	app        = kingpin.New("lintflow", "Lint Flow").Version(config.Version + "-build-" + config.Build)
 	codeReview = app.Flag("code-review", "Code review (bitbucket|gerrit|gitee|github|gitlab)").Required().String()
@@ -37,7 +42,7 @@ var (
 	outputFile = app.Flag("output-file", "Output file (.json|.txt)").Default().String()
 )
 
-func Run() error {
+func Run(ctx context.Context) error {
 	kingpin.MustParse(app.Parse(os.Args[1:]))
 
 	c, err := initConfig(*configFile)
@@ -62,7 +67,7 @@ func Run() error {
 
 	log.Println("flow running")
 
-	if err := runFlow(c, r, l, w); err != nil {
+	if err := runFlow(ctx, c, r, l, w); err != nil {
 		return errors.Wrap(err, "failed to run flow")
 	}
 
@@ -130,7 +135,7 @@ func initWriter(_ *config.Config) (writer.Writer, error) {
 	return writer.New(c), nil
 }
 
-func runFlow(c *config.Config, r review.Review, l lint.Lint, w writer.Writer) error {
+func runFlow(ctx context.Context, c *config.Config, r review.Review, l lint.Lint, w writer.Writer) error {
 	cfg := flow.DefaultConfig()
 	if cfg == nil {
 		return errors.New("failed to config flow")
@@ -145,7 +150,15 @@ func runFlow(c *config.Config, r review.Review, l lint.Lint, w writer.Writer) er
 		return errors.New("failed to new flow")
 	}
 
-	buf, err := f.Run(*commitHash)
+	timeout, err := setTimeout(c.Spec.Flow.Timeout)
+	if err != nil {
+		return errors.Wrap(err, "failed to set timeout")
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	buf, err := f.Run(ctx, *commitHash)
 	if err != nil {
 		return errors.Wrap(err, "failed to run flow")
 	}
@@ -164,4 +177,20 @@ func runFlow(c *config.Config, r review.Review, l lint.Lint, w writer.Writer) er
 	}
 
 	return nil
+}
+
+func setTimeout(timeout string) (time.Duration, error) {
+	var t time.Duration
+	var err error
+
+	if timeout != "" {
+		t, err = time.ParseDuration(timeout)
+		if err != nil {
+			return 0, errors.Wrap(err, "failed to parse duration")
+		}
+	} else {
+		t = Timeout
+	}
+
+	return t, nil
 }

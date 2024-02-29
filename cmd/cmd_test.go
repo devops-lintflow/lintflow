@@ -14,6 +14,7 @@ package cmd
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -53,4 +54,22 @@ func TestInitWriter(t *testing.T) {
 
 	_, err = initWriter(c)
 	assert.Equal(t, nil, err)
+}
+
+func TestSetTimeout(t *testing.T) {
+	timeout, err := setTimeout("")
+	assert.Equal(t, nil, err)
+	assert.Equal(t, Timeout, timeout)
+
+	timeout, err = setTimeout("1s")
+	assert.Equal(t, nil, err)
+	assert.Equal(t, 1*time.Second, timeout)
+
+	timeout, err = setTimeout("10m")
+	assert.Equal(t, nil, err)
+	assert.Equal(t, 10*time.Minute, timeout)
+
+	timeout, err = setTimeout("100h")
+	assert.Equal(t, nil, err)
+	assert.Equal(t, 100*time.Hour, timeout)
 }

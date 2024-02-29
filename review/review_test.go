@@ -30,6 +30,8 @@ import (
 const (
 	changeGerrit   = 41
 	commitGerrit   = "8f71e42dbcd8c68d849e483c04670f58621aab9c"
+	queryAfter     = "after:2024-02-27"
+	queryBefore    = "before:2024-02-28"
 	revisionGerrit = 1
 )
 

@@ -33,7 +33,24 @@ import (
 )
 
 const (
-	commitMsg = "/COMMIT_MSG"
+	queryLimit   = 1000
+	urlChanges   = "/changes/"
+	urlContent   = "/content"
+	urlDetail    = "/detail"
+	urlFiles     = "/files/"
+	urlNumber    = "&n="
+	urlOption    = "&o="
+	urlPatch     = "/patch"
+	urlPrefix    = "/a"
+	urlQuery     = "?q="
+	urlReview    = "/review"
+	urlRevisions = "/revisions/"
+	urlStart     = "&start="
+)
+
+const (
+	commitMsg   = "/COMMIT_MSG"
+	commitQuery = "commit"
 )
 
 const (
@@ -70,26 +87,26 @@ func (g *gerrit) Fetch(root, commit string) (dname, rname string, flist []string
 	}
 
 	// Query commit
-	r, err := g.get(g.urlQuery("commit:"+commit, []string{"CURRENT_REVISION"}, 0))
+	buf, err := g.get(g.urlQuery(commitQuery+":"+commit, []string{"CURRENT_REVISION"}, 0))
 	if err != nil {
 		return "", "", nil, errors.Wrap(err, "failed to query")
 	}
 
-	queryRet, err := g.unmarshalList(r)
+	queryRet, err := g.unmarshalList(buf)
 	if err != nil {
 		return "", "", nil, errors.Wrap(err, "failed to unmarshalList")
 	}
 
-	revisions := queryRet["revisions"].(map[string]interface{})
-	current := revisions[queryRet["current_revision"].(string)].(map[string]interface{})
+	revisions := queryRet[0].(map[string]interface{})["revisions"].(map[string]interface{})
+	current := revisions[queryRet[0].(map[string]interface{})["current_revision"].(string)].(map[string]interface{})
 
-	changeNum := int(queryRet["_number"].(float64))
+	changeNum := int(queryRet[0].(map[string]interface{})["_number"].(float64))
 	revisionNum := int(current["_number"].(float64))
 
-	path := filepath.Join(root, strconv.Itoa(changeNum), queryRet["current_revision"].(string))
+	path := filepath.Join(root, strconv.Itoa(changeNum), queryRet[0].(map[string]interface{})["current_revision"].(string))
 
 	// Get files
-	buf, err := g.get(g.urlFiles(changeNum, revisionNum))
+	buf, err = g.get(g.urlFiles(changeNum, revisionNum))
 	if err != nil {
 		return "", "", nil, errors.Wrap(err, "failed to files")
 	}
@@ -131,7 +148,41 @@ func (g *gerrit) Fetch(root, commit string) (dname, rname string, flist []string
 		}
 	}
 
-	return path, queryRet["project"].(string), files, nil
+	return path, queryRet[0].(map[string]interface{})["project"].(string), files, nil
+}
+
+func (g *gerrit) Query(search string, start int) ([]interface{}, error) {
+	helper := func(search string, start int) []interface{} {
+		buf, err := g.get(g.urlQuery(search, []string{"CURRENT_REVISION"}, start))
+		if err != nil {
+			return nil
+		}
+		ret, err := g.unmarshalList(buf)
+		if err != nil {
+			return nil
+		}
+		return ret
+	}
+
+	buf := helper(search, start)
+	if len(buf) == 0 {
+		return []interface{}{}, nil
+	}
+
+	more, ok := buf[len(buf)-1].(map[string]interface{})["_more_changes"].(bool)
+	if !ok {
+		more = false
+	}
+
+	if !more {
+		return buf, nil
+	}
+
+	if b, err := g.Query(search, start+len(buf)); err == nil {
+		buf = append(buf, b...)
+	}
+
+	return buf, nil
 }
 
 // nolint:funlen,gocyclo
@@ -183,7 +234,7 @@ func (g *gerrit) Vote(commit string, data []proto.Format) error {
 	}
 
 	// Query commit
-	ret, err := g.get(g.urlQuery("commit:"+commit, []string{"CURRENT_REVISION"}, 0))
+	ret, err := g.get(g.urlQuery(commitQuery+":"+commit, []string{"CURRENT_REVISION"}, 0))
 	if err != nil {
 		return errors.Wrap(err, "failed to query")
 	}
@@ -193,11 +244,11 @@ func (g *gerrit) Vote(commit string, data []proto.Format) error {
 		return errors.Wrap(err, "failed to unmarshalList")
 	}
 
-	revisions := c["revisions"].(map[string]interface{})
-	current := revisions[c["current_revision"].(string)].(map[string]interface{})
+	revisions := c[0].(map[string]interface{})["revisions"].(map[string]interface{})
+	current := revisions[c[0].(map[string]interface{})["current_revision"].(string)].(map[string]interface{})
 
 	// Get patch
-	ret, err = g.get(g.urlPatch(int(c["_number"].(float64)), int(current["_number"].(float64))))
+	ret, err = g.get(g.urlPatch(int(c[0].(map[string]interface{})["_number"].(float64)), int(current["_number"].(float64))))
 	if err != nil {
 		return errors.Wrap(err, "failed to patch")
 	}
@@ -229,7 +280,8 @@ func (g *gerrit) Vote(commit string, data []proto.Format) error {
 	// Review commit
 	comments, labels, message := build(data, diffs)
 	buf := map[string]interface{}{"comments": comments, "labels": labels, "message": message}
-	if err := g.post(g.urlReview(int(c["_number"].(float64)), int(current["_number"].(float64))), buf); err != nil {
+	if err := g.post(g.urlReview(int(c[0].(map[string]interface{})["_number"].(float64)),
+		int(current["_number"].(float64))), buf); err != nil {
 		return errors.Wrap(err, "failed to review")
 	}
 
@@ -264,8 +316,8 @@ func (g *gerrit) unmarshal(data []byte) (map[string]interface{}, error) {
 	return buf, nil
 }
 
-func (g *gerrit) unmarshalList(data []byte) (map[string]interface{}, error) {
-	var buf []map[string]interface{}
+func (g *gerrit) unmarshalList(data []byte) ([]interface{}, error) {
+	var buf []interface{}
 
 	if err := json.Unmarshal(data[4:], &buf); err != nil {
 		return nil, errors.Wrap(err, "failed to unmarshal")
@@ -275,73 +327,76 @@ func (g *gerrit) unmarshalList(data []byte) (map[string]interface{}, error) {
 		return nil, errors.New("failed to match")
 	}
 
-	return buf[0], nil
+	return buf, nil
 }
 
 func (g *gerrit) urlContent(change, revision int, name string) string {
-	buf := strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + "/changes/" + strconv.Itoa(change) +
-		"/revisions/" + strconv.Itoa(revision) + "/files/" + url.QueryEscape(name) + "/content"
+	buf := strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + urlChanges + strconv.Itoa(change) +
+		urlRevisions + strconv.Itoa(revision) + urlFiles + url.QueryEscape(name) + urlContent
 
 	if g.r.User != "" && g.r.Pass != "" {
-		buf = strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + "/a/changes/" + strconv.Itoa(change) +
-			"/revisions/" + strconv.Itoa(revision) + "/files/" + url.QueryEscape(name) + "/content"
+		buf = strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + urlPrefix + urlChanges + strconv.Itoa(change) +
+			urlRevisions + strconv.Itoa(revision) + urlFiles + url.QueryEscape(name) + urlContent
 	}
 
 	return buf
 }
 
 func (g *gerrit) urlDetail(change int) string {
-	buf := strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + "/changes/" + strconv.Itoa(change) + "/detail"
+	buf := strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + urlChanges + strconv.Itoa(change) + urlDetail
 
 	if g.r.User != "" && g.r.Pass != "" {
-		buf = strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + "/a/changes/" + strconv.Itoa(change) + "/detail"
+		buf = strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + urlPrefix + urlChanges + strconv.Itoa(change) + urlDetail
 	}
 
 	return buf
 }
 
 func (g *gerrit) urlFiles(change, revision int) string {
-	buf := strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + "/changes/" + strconv.Itoa(change) +
-		"/revisions/" + strconv.Itoa(revision) + "/files/"
+	buf := strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + urlChanges + strconv.Itoa(change) +
+		urlRevisions + strconv.Itoa(revision) + urlFiles
 
 	if g.r.User != "" && g.r.Pass != "" {
-		buf = strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + "/a/changes/" + strconv.Itoa(change) +
-			"/revisions/" + strconv.Itoa(revision) + "/files/"
+		buf = strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + urlPrefix + urlChanges + strconv.Itoa(change) +
+			urlRevisions + strconv.Itoa(revision) + urlFiles
 	}
 
 	return buf
 }
 
 func (g *gerrit) urlPatch(change, revision int) string {
-	buf := strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + "/changes/" + strconv.Itoa(change) +
-		"/revisions/" + strconv.Itoa(revision) + "/patch"
+	buf := strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + urlChanges + strconv.Itoa(change) +
+		urlRevisions + strconv.Itoa(revision) + urlPatch
 
 	if g.r.User != "" && g.r.Pass != "" {
-		buf = strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + "/a/changes/" + strconv.Itoa(change) +
-			"/revisions/" + strconv.Itoa(revision) + "/patch"
+		buf = strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + urlPrefix + urlChanges + strconv.Itoa(change) +
+			urlRevisions + strconv.Itoa(revision) + urlPatch
 	}
 
 	return buf
 }
 
 func (g *gerrit) urlQuery(search string, option []string, start int) string {
-	query := "?q=" + search + "&o=" + strings.Join(option, "&o=") + "&n=" + strconv.Itoa(start)
+	query := urlQuery + url.PathEscape(search) +
+		urlOption + strings.Join(option, urlOption) +
+		urlStart + strconv.Itoa(start) +
+		urlNumber + strconv.Itoa(queryLimit)
 
-	buf := strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + "/changes/" + query
+	buf := strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + urlChanges + query
 	if g.r.User != "" && g.r.Pass != "" {
-		buf = strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + "/a/changes/" + query
+		buf = strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + urlPrefix + urlChanges + query
 	}
 
 	return buf
 }
 
 func (g *gerrit) urlReview(change, revision int) string {
-	buf := strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + "/changes/" + strconv.Itoa(change) +
-		"/revisions/" + strconv.Itoa(revision) + "/review"
+	buf := strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + urlChanges + strconv.Itoa(change) +
+		urlRevisions + strconv.Itoa(revision) + urlReview
 
 	if g.r.User != "" && g.r.Pass != "" {
-		buf = strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + "/a/changes/" + strconv.Itoa(change) +
-			"/revisions/" + strconv.Itoa(revision) + "/review"
+		buf = strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + urlPrefix + urlChanges + strconv.Itoa(change) +
+			urlRevisions + strconv.Itoa(revision) + urlReview
 	}
 
 	return buf

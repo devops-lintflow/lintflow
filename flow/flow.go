@@ -30,7 +30,7 @@ import (
 )
 
 type Flow interface {
-	Run(string) ([]proto.Format, error)
+	Run(context.Context, string) ([]proto.Format, error)
 }
 
 type Config struct {
@@ -53,11 +53,11 @@ func DefaultConfig() *Config {
 	return &Config{}
 }
 
-func (f *flow) Run(commit string) ([]proto.Format, error) {
+func (f *flow) Run(ctx context.Context, commit string) ([]proto.Format, error) {
 	var err error
 	var ret []proto.Format
 
-	buf, err := runtime.Run(f.routine, []interface{}{commit})
+	buf, err := runtime.Run(ctx, f.routine, []interface{}{commit})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to run")
 	}
@@ -77,7 +77,7 @@ func (f *flow) Run(commit string) ([]proto.Format, error) {
 	return ret, err
 }
 
-func (f *flow) routine(data interface{}) interface{} {
+func (f *flow) routine(ctx context.Context, data interface{}) interface{} {
 	d, _ := os.Getwd()
 	t := time.Now()
 	root := filepath.Join(d, "gerrit-"+t.Format("2006-01-02"))
@@ -91,7 +91,7 @@ func (f *flow) routine(data interface{}) interface{} {
 		return nil
 	}
 
-	buf, err := f.cfg.Lint.Run(dir, repo, files, f.match)
+	buf, err := f.cfg.Lint.Run(ctx, dir, repo, files, f.match)
 	if err != nil {
 		log.Println(err)
 		return nil
