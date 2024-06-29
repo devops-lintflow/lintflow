@@ -24,9 +24,9 @@ type MetaData struct {
 }
 
 type Spec struct {
-	Flow   Flow     `yaml:"flow"`
-	Lint   []Lint   `yaml:"lint"`
-	Review []Review `yaml:"review"`
+	Flow   Flow   `yaml:"flow"`
+	Lints  []Lint `yaml:"lint"`
+	Review Review `yaml:"review"`
 }
 
 type Flow struct {
@@ -34,10 +34,11 @@ type Flow struct {
 }
 
 type Lint struct {
-	Filter Filter `yaml:"filter"`
-	Host   string `yaml:"host"`
 	Name   string `yaml:"name"`
+	Host   string `yaml:"host"`
 	Port   int    `yaml:"port"`
+	Filter Filter `yaml:"filter"`
+	Vote   string `yaml:"vote"`
 }
 
 type Filter struct {
@@ -45,24 +46,24 @@ type Filter struct {
 }
 
 type Include struct {
-	Extension []string `yaml:"extension"`
-	File      []string `yaml:"file"`
-	Repo      []string `yaml:"repo"`
+	Extensions []string `yaml:"extension"`
+	Files      []string `yaml:"file"`
+	Repos      []string `yaml:"repo"`
 }
 
 type Review struct {
-	Host string `yaml:"host"`
-	Name string `yaml:"name"`
-	Pass string `yaml:"pass"`
-	Port int    `yaml:"port"`
-	User string `yaml:"user"`
-	Vote Vote   `yaml:"vote"`
+	Name  string `yaml:"name"`
+	Host  string `yaml:"host"`
+	Port  int    `yaml:"port"`
+	User  string `yaml:"user"`
+	Pass  string `yaml:"pass"`
+	Votes []Vote `yaml:"vote"`
 }
 
 type Vote struct {
+	Label       string `yaml:"label"`
 	Approval    string `yaml:"approval"`
 	Disapproval string `yaml:"disapproval"`
-	Label       string `yaml:"label"`
 	Message     string `yaml:"message"`
 }
 

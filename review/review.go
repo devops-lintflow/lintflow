@@ -19,19 +19,14 @@ import (
 	"github.com/devops-lintflow/lintflow/proto"
 )
 
-const (
-	reviewGerrit = "gerrit"
-)
-
 type Review interface {
 	Clean(string) error
 	Fetch(string, string) (string, string, []string, error)
-	Vote(string, []proto.Format) error
+	Vote(string, []proto.Format, config.Vote) error
 }
 
 type Config struct {
-	Name    string
-	Reviews []config.Review
+	Review config.Review
 }
 
 type review struct {
@@ -40,22 +35,9 @@ type review struct {
 }
 
 func New(cfg *Config) Review {
-	reviews := map[string]Review{}
-
-	for index := range cfg.Reviews {
-		if cfg.Reviews[index].Name == reviewGerrit {
-			reviews[cfg.Reviews[index].Name] = &gerrit{cfg.Reviews[index]}
-		}
-	}
-
-	h, ok := reviews[cfg.Name]
-	if !ok {
-		h = nil
-	}
-
 	return &review{
 		cfg: cfg,
-		hdl: h,
+		hdl: &gerrit{cfg.Review},
 	}
 }
 
@@ -88,12 +70,12 @@ func (r *review) Fetch(root, commit string) (dname, rname string, flist []string
 	return dir, repo, files, nil
 }
 
-func (r *review) Vote(commit string, data []proto.Format) error {
+func (r *review) Vote(commit string, data []proto.Format, vote config.Vote) error {
 	if r.hdl == nil {
 		return errors.New("invalid handle")
 	}
 
-	if err := r.hdl.Vote(commit, data); err != nil {
+	if err := r.hdl.Vote(commit, data, vote); err != nil {
 		return errors.Wrap(err, "failed to vote")
 	}
 

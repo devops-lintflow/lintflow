@@ -27,7 +27,6 @@ import (
 	"github.com/devops-lintflow/lintflow/flow"
 	"github.com/devops-lintflow/lintflow/lint"
 	"github.com/devops-lintflow/lintflow/review"
-	"github.com/devops-lintflow/lintflow/writer"
 )
 
 const (
@@ -39,7 +38,6 @@ var (
 	codeReview = app.Flag("code-review", "Code review (bitbucket|gerrit|gitee|github|gitlab)").Required().String()
 	commitHash = app.Flag("commit-hash", "Commit hash (SHA-1)").Required().String()
 	configFile = app.Flag("config-file", "Config file (.yml)").Required().String()
-	outputFile = app.Flag("output-file", "Output file (.json|.txt)").Default().String()
 )
 
 func Run(ctx context.Context) error {
@@ -60,14 +58,9 @@ func Run(ctx context.Context) error {
 		return errors.Wrap(err, "failed to init lint")
 	}
 
-	w, err := initWriter(c)
-	if err != nil {
-		return errors.Wrap(err, "failed to init writer")
-	}
-
 	log.Println("flow running")
 
-	if err := runFlow(ctx, c, r, l, w); err != nil {
+	if err := runFlow(ctx, c, r, l); err != nil {
 		return errors.Wrap(err, "failed to run flow")
 	}
 
@@ -109,8 +102,7 @@ func initReview(cfg *config.Config) (review.Review, error) {
 		return nil, errors.New("failed to config")
 	}
 
-	c.Name = *codeReview
-	c.Reviews = cfg.Spec.Review
+	c.Review = cfg.Spec.Review
 
 	return review.New(c), nil
 }
@@ -121,21 +113,12 @@ func initLint(cfg *config.Config) (lint.Lint, error) {
 		return nil, errors.New("failed to config")
 	}
 
-	c.Lints = cfg.Spec.Lint
+	c.Lints = cfg.Spec.Lints
 
 	return lint.New(c), nil
 }
 
-func initWriter(_ *config.Config) (writer.Writer, error) {
-	c := writer.DefaultConfig()
-	if c == nil {
-		return nil, errors.New("failed to config")
-	}
-
-	return writer.New(c), nil
-}
-
-func runFlow(ctx context.Context, c *config.Config, r review.Review, l lint.Lint, w writer.Writer) error {
+func runFlow(ctx context.Context, c *config.Config, r review.Review, l lint.Lint) error {
 	cfg := flow.DefaultConfig()
 	if cfg == nil {
 		return errors.New("failed to config flow")
@@ -158,22 +141,8 @@ func runFlow(ctx context.Context, c *config.Config, r review.Review, l lint.Lint
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	buf, err := f.Run(ctx, *commitHash)
-	if err != nil {
+	if err = f.Run(ctx, *commitHash); err != nil {
 		return errors.Wrap(err, "failed to run flow")
-	}
-
-	if *outputFile != "" {
-		if _, err = os.Stat(*outputFile); err == nil {
-			return errors.New("file already exists")
-		}
-		if len(buf) != 0 {
-			if err = w.Run(*outputFile, buf); err != nil {
-				return errors.Wrap(err, "failed to run writer")
-			}
-		} else {
-			return nil
-		}
 	}
 
 	return nil

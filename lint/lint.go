@@ -30,7 +30,7 @@ import (
 )
 
 type Lint interface {
-	Run(context.Context, string, string, []string, func(*config.Filter, string, string) bool) ([]proto.Format, error)
+	Run(context.Context, string, string, []string, func(*config.Filter, string, string) bool) (map[string][]proto.Format, error)
 }
 
 type Config struct {
@@ -53,7 +53,7 @@ func DefaultConfig() *Config {
 
 // nolint:gosec
 func (l *lint) Run(ctx context.Context, root, repo string, files []string,
-	match func(*config.Filter, string, string) bool) ([]proto.Format, error) {
+	match func(*config.Filter, string, string) bool) (map[string][]proto.Format, error) {
 	helper := func(filter *config.Filter, files []string) []string {
 		var buf []string
 		for _, item := range files {
@@ -65,15 +65,15 @@ func (l *lint) Run(ctx context.Context, root, repo string, files []string,
 	}
 
 	type result struct {
-		data []proto.Format
+		data map[string][]proto.Format
 		err  error
 	}
 
 	bypass := true
 	ch := make(chan result, len(l.cfg.Lints))
 
-	for _, val := range l.cfg.Lints {
-		buf := helper(&val.Filter, files)
+	for i := range l.cfg.Lints {
+		buf := helper(&l.cfg.Lints[i].Filter, files)
 		if len(buf) != 0 {
 			bypass = false
 		}
@@ -91,16 +91,16 @@ func (l *lint) Run(ctx context.Context, root, repo string, files []string,
 				}
 				ch <- result{r, nil}
 			} else {
-				ch <- result{[]proto.Format{}, nil}
+				ch <- result{map[string][]proto.Format{}, nil}
 			}
-		}(ctx, buf, val)
+		}(ctx, buf, l.cfg.Lints[i])
 	}
 
 	if bypass {
 		return nil, nil
 	}
 
-	var ret []proto.Format
+	ret := map[string][]proto.Format{}
 
 	for range l.cfg.Lints {
 		r := <-ch
@@ -108,7 +108,16 @@ func (l *lint) Run(ctx context.Context, root, repo string, files []string,
 			return nil, r.err
 		}
 		if len(r.data) != 0 {
-			ret = append(ret, r.data...)
+			for k, v := range r.data {
+				if len(v) == 0 {
+					continue
+				}
+				if _, ok := ret[k]; !ok {
+					ret[k] = v
+				} else {
+					ret[k] = append(ret[k], v...)
+				}
+			}
 		}
 	}
 
@@ -159,17 +168,13 @@ func (l *lint) marshal(root string, data []string) ([]byte, error) {
 	return ret, nil
 }
 
-func (l *lint) routine(ctx context.Context, host string, port int, data []byte) ([]proto.Format, error) {
-	helper := func(data string) ([]proto.Format, error) {
+func (l *lint) routine(ctx context.Context, host string, port int, data []byte) (map[string][]proto.Format, error) {
+	helper := func(data string) (map[string][]proto.Format, error) {
 		var buf map[string][]proto.Format
 		if err := json.Unmarshal([]byte(data), &buf); err != nil {
 			return nil, errors.Wrap(err, "failed to unmarshal")
 		}
-		var ret []proto.Format
-		for _, val := range buf {
-			ret = append(ret, val...)
-		}
-		return ret, nil
+		return buf, nil
 	}
 
 	// nolint: staticcheck

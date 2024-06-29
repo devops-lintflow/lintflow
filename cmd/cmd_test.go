@@ -48,14 +48,6 @@ func TestInitLint(t *testing.T) {
 	assert.Equal(t, nil, err)
 }
 
-func TestInitWriter(t *testing.T) {
-	c, err := initConfig("../tests/config.yml")
-	assert.Equal(t, nil, err)
-
-	_, err = initWriter(c)
-	assert.Equal(t, nil, err)
-}
-
 func TestSetTimeout(t *testing.T) {
 	timeout, err := setTimeout("")
 	assert.Equal(t, nil, err)

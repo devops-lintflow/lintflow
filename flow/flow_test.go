@@ -13,64 +13,146 @@
 package flow
 
 import (
+	"io"
+	"os"
 	"testing"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+	"gopkg.in/yaml.v3"
 
 	"github.com/devops-lintflow/lintflow/config"
+	"github.com/devops-lintflow/lintflow/proto"
 )
+
+func initConfig(name string) (*config.Config, error) {
+	c := config.New()
+	if c == nil {
+		return &config.Config{}, errors.New("failed to new")
+	}
+
+	fi, err := os.Open(name)
+	if err != nil {
+		return c, errors.Wrap(err, "failed to open")
+	}
+
+	defer func() {
+		_ = fi.Close()
+	}()
+
+	buf, err := io.ReadAll(fi)
+	if err != nil {
+		return c, errors.Wrap(err, "failed to readall")
+	}
+
+	if err := yaml.Unmarshal(buf, c); err != nil {
+		return c, errors.Wrap(err, "failed to unmarshal")
+	}
+
+	return c, nil
+}
 
 // nolint: funlen
 // nolint: goconst
-func TestFilter(t *testing.T) {
+func TestMatchFilter(t *testing.T) {
 	filter := config.Filter{
 		Include: config.Include{
-			Extension: []string{".java", ".xml"},
-			File:      []string{"message"},
-			Repo:      []string{""},
+			Extensions: []string{".java", ".xml"},
+			Files:      []string{"message"},
+			Repos:      []string{""},
 		},
 	}
 
 	f := flow{}
 
-	ret := f.match(&filter, "", ".ext")
+	ret := f.matchFilter(&filter, "", ".ext")
 	assert.Equal(t, false, ret)
 
-	ret = f.match(&filter, "", "foo.ext")
+	ret = f.matchFilter(&filter, "", "foo.ext")
 	assert.Equal(t, false, ret)
 
-	ret = f.match(&filter, "", ".java")
+	ret = f.matchFilter(&filter, "", ".java")
 	assert.Equal(t, true, ret)
 
-	ret = f.match(nil, "", ".java")
+	ret = f.matchFilter(nil, "", ".java")
 	assert.Equal(t, false, ret)
 
-	ret = f.match(&filter, "", "foo.java")
+	ret = f.matchFilter(&filter, "", "foo.java")
 	assert.Equal(t, true, ret)
 
-	ret = f.match(nil, "", "foo.java")
+	ret = f.matchFilter(nil, "", "foo.java")
 	assert.Equal(t, false, ret)
 
-	ret = f.match(&filter, "", "message")
+	ret = f.matchFilter(&filter, "", "message")
 	assert.Equal(t, true, ret)
 
-	ret = f.match(nil, "", "message")
+	ret = f.matchFilter(nil, "", "message")
 	assert.Equal(t, false, ret)
 
-	filter.Include.Repo = []string{"alpha", "beta"}
+	filter.Include.Repos = []string{"alpha", "beta"}
 
-	ret = f.match(&filter, "", "message")
+	ret = f.matchFilter(&filter, "", "message")
 	assert.Equal(t, true, ret)
 
-	ret = f.match(nil, "", "message")
+	ret = f.matchFilter(nil, "", "message")
 	assert.Equal(t, false, ret)
 
-	ret = f.match(&filter, "foo", "message")
+	ret = f.matchFilter(&filter, "foo", "message")
 	assert.Equal(t, false, ret)
 
-	ret = f.match(&filter, "alpha", "message")
+	ret = f.matchFilter(&filter, "alpha", "message")
 	assert.Equal(t, true, ret)
 
-	ret = f.match(nil, "alpha", "message")
+	ret = f.matchFilter(nil, "alpha", "message")
 	assert.Equal(t, false, ret)
+}
+
+func TestBuildLabel(t *testing.T) {
+	c, err := initConfig("../tests/config.yml")
+	assert.Equal(t, nil, err)
+
+	cfg := DefaultConfig()
+	cfg.Config = *c
+
+	f := flow{
+		cfg: cfg,
+	}
+
+	buf := map[string][]proto.Format{
+		"lintai": {
+			{
+				File:    "/path/to/file1",
+				Line:    1,
+				Type:    proto.TypeError,
+				Details: "Disapproved",
+			},
+		},
+		"lintcpp": {
+			{
+				File:    "/path/to/file2",
+				Line:    1,
+				Type:    proto.TypeWarn,
+				Details: "Disapproved",
+			},
+		},
+	}
+
+	ret := f.buildLabel(buf)
+	assert.NotEqual(t, nil, ret)
+	assert.NotEqual(t, 0, len(ret))
+}
+
+func TestBuildVote(t *testing.T) {
+	c, err := initConfig("../tests/config.yml")
+	assert.Equal(t, nil, err)
+
+	cfg := DefaultConfig()
+	cfg.Config = *c
+
+	f := flow{
+		cfg: cfg,
+	}
+
+	ret := f.buildVote("Lint-Verified")
+	assert.Equal(t, "Lint-Verified", ret.Label)
 }

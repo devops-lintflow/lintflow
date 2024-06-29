@@ -14,7 +14,6 @@ package flow
 
 import (
 	"context"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -26,11 +25,10 @@ import (
 	"github.com/devops-lintflow/lintflow/lint"
 	"github.com/devops-lintflow/lintflow/proto"
 	"github.com/devops-lintflow/lintflow/review"
-	"github.com/devops-lintflow/lintflow/runtime"
 )
 
 type Flow interface {
-	Run(context.Context, string) ([]proto.Format, error)
+	Run(context.Context, string) error
 }
 
 type Config struct {
@@ -53,65 +51,47 @@ func DefaultConfig() *Config {
 	return &Config{}
 }
 
-func (f *flow) Run(ctx context.Context, commit string) ([]proto.Format, error) {
-	var err error
-	var ret []proto.Format
-
-	buf, err := runtime.Run(ctx, f.routine, []interface{}{commit})
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to run")
-	}
-
-	err = nil
-
-	for _, val := range buf {
-		if val == nil {
-			err = errors.New("invalid data")
-			break
-		}
-		if len(val.([]proto.Format)) != 0 {
-			ret = append(ret, val.([]proto.Format)...)
-		}
-	}
-
-	return ret, err
-}
-
-func (f *flow) routine(ctx context.Context, data interface{}) interface{} {
+func (f *flow) Run(ctx context.Context, commit string) error {
 	d, _ := os.Getwd()
 	t := time.Now()
+
 	root := filepath.Join(d, "gerrit-"+t.Format("2006-01-02"))
 
-	commit := data.(string)
-
 	dir, repo, files, err := f.cfg.Review.Fetch(root, commit)
-	defer func() { _ = f.cfg.Review.Clean(root) }()
+
+	defer func() {
+		_ = f.cfg.Review.Clean(root)
+	}()
+
 	if err != nil {
-		log.Println(err)
-		return nil
+		return errors.Wrap(err, "failed to clean reivew")
 	}
 
-	buf, err := f.cfg.Lint.Run(ctx, dir, repo, files, f.match)
+	buf, err := f.cfg.Lint.Run(ctx, dir, repo, files, f.matchFilter)
 	if err != nil {
-		log.Println(err)
+		return errors.Wrap(err, "failed to run lint")
+	}
+
+	if buf == nil || len(buf) == 0 {
 		return nil
 	}
 
-	if buf == nil {
-		return []proto.Format{}
+	labels := f.buildLabel(buf)
+
+	for label, data := range labels {
+		if vote := f.buildVote(label); vote.Label != "" {
+			if err := f.cfg.Review.Vote(commit, data, vote); err != nil {
+				return errors.Wrap(err, "failed to vote reivew")
+			}
+		}
 	}
 
-	if err := f.cfg.Review.Vote(commit, buf); err != nil {
-		log.Println(err)
-		return nil
-	}
-
-	return buf
+	return nil
 }
 
-func (f *flow) match(filter *config.Filter, repo, file string) bool {
+func (f *flow) matchFilter(filter *config.Filter, repo, file string) bool {
 	matchExtension := func(filter *config.Filter, data string) bool {
-		for _, val := range filter.Include.Extension {
+		for _, val := range filter.Include.Extensions {
 			if val == filepath.Ext(strings.TrimSuffix(data, proto.Base64Content)) {
 				return true
 			}
@@ -120,7 +100,7 @@ func (f *flow) match(filter *config.Filter, repo, file string) bool {
 	}
 
 	matchFile := func(filter *config.Filter, data string) bool {
-		for _, val := range filter.Include.File {
+		for _, val := range filter.Include.Files {
 			if val == filepath.Base(strings.TrimSuffix(data, proto.Base64Content)) {
 				return true
 			}
@@ -129,10 +109,10 @@ func (f *flow) match(filter *config.Filter, repo, file string) bool {
 	}
 
 	matchRepo := func(filter *config.Filter, data string) bool {
-		if len(filter.Include.Repo) == 0 {
+		if len(filter.Include.Repos) == 0 {
 			return true
 		}
-		for _, val := range filter.Include.Repo {
+		for _, val := range filter.Include.Repos {
 			if val == data {
 				return true
 			}
@@ -153,4 +133,47 @@ func (f *flow) match(filter *config.Filter, repo, file string) bool {
 	}
 
 	return true
+}
+
+func (f *flow) buildLabel(data map[string][]proto.Format) map[string][]proto.Format {
+	helper := func(name string) string {
+		var buf string
+		lints := f.cfg.Config.Spec.Lints
+		for i := range lints {
+			if lints[i].Name == name {
+				buf = lints[i].Vote
+				break
+			}
+		}
+		return buf
+	}
+
+	buf := map[string][]proto.Format{}
+
+	for key, val := range data {
+		if vote := helper(key); vote != "" {
+			if _, ok := buf[vote]; !ok {
+				buf[vote] = val
+			} else {
+				buf[vote] = append(buf[vote], val...)
+			}
+		}
+	}
+
+	return buf
+}
+
+func (f *flow) buildVote(label string) config.Vote {
+	var buf config.Vote
+
+	votes := f.cfg.Config.Spec.Review.Votes
+
+	for _, item := range votes {
+		if item.Label == label {
+			buf = item
+			break
+		}
+	}
+
+	return buf
 }

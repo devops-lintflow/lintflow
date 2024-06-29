@@ -25,7 +25,7 @@
 
 ```bash
 make build
-./bin/lintflow --config-file="config.yml" --code-review="gerrit" --commit-hash="{hash}" --output-file="output.json"
+./bin/lintflow --config-file="config.yml" --code-review="gerrit" --commit-hash="{hash}"
 ```
 
 
@@ -34,7 +34,7 @@ make build
 
 ```bash
 docker build --no-cache -f Dockerfile -t devops-lintflow/lintflow:latest .
-docker run devops-lintflow/lintflow:latest /lintflow --config-file="/config.yml" --code-review="gerrit" --commit-hash="{hash}" --output-file="/output.json"
+docker run devops-lintflow/lintflow:latest /lintflow --config-file="/config.yml" --code-review="gerrit" --commit-hash="{hash}"
 ```
 
 
@@ -67,7 +67,6 @@ Flags:
   --code-review=CODE-REVIEW  Code review (bitbucket|gerrit|gitee|github|gitlab)
   --commit-hash=COMMIT-HASH  Commit hash (SHA-1)
   --config-file=CONFIG-FILE  Config file (.yml)
-  --output-file=OUTPUT-FILE  Output file (.json|.txt)
 ```
 
 
@@ -87,7 +86,7 @@ spec:
   flow:
     timeout: 120s
   lint:
-    - name: lintcpp
+    - name: lintai
       host: 127.0.0.1
       port: 9090
       filter:
@@ -98,55 +97,80 @@ spec:
             - .cpp
             - .h
             - .hpp
+            - .java
           file:
-            - message
+            - name
           repo:
-            - foo
-    - name: lintjava
+            - name
+      vote: AI-Verified
+    - name: lintcpp
       host: 127.0.0.1
       port: 9091
+      filter:
+        include:
+          extension:
+            - .c
+            - .cc
+            - .cpp
+            - .h
+            - .hpp
+          file:
+            - name
+          repo:
+            - name
+      vote: Lint-Verified
+    - name: lintjava
+      host: 127.0.0.1
+      port: 9092
       filter:
         include:
           extension:
             - .java
             - .xml
           file:
-            - message
+            - name
           repo:
-            - foo
+            - name
+      vote: Lint-Verified
     - name: lintpython
-      host: 127.0.0.1
-      port: 9092
-      filter:
-        include:
-          extension:
-            - .py
-          file:
-            - message
-          repo:
-            - foo
-    - name: lintshell
       host: 127.0.0.1
       port: 9093
       filter:
         include:
           extension:
+            - .py
+          file:
+            - name
+          repo:
+            - name
+      vote: Lint-Verified
+    - name: lintshell
+      host: 127.0.0.1
+      port: 9094
+      filter:
+        include:
+          extension:
             - .sh
           file:
-            - message
+            - name
           repo:
-            - foo
+            - name
+      vote: Lint-Verified
   review:
-    - name: gerrit
-      host: http://127.0.0.1/
-      port: 8080
-      user: user
-      pass: pass
-      vote:
+    name: gerrit
+    host: http://127.0.0.1/
+    port: 8080
+    user: user
+    pass: pass
+    vote:
+      - label: AI-Verified
         approval: +1
         disapproval: -1
-        label: Code-Review
-        message: Voting Code-Review by lintflow
+        message: Voting AI-Verified by lintflow
+      - label: Lint-Verified
+        approval: +1
+        disapproval: -1
+        message: Voting Lint-Verified by lintflow
 ```
 
 

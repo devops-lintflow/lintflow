@@ -16,6 +16,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/devops-lintflow/lintflow/config"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -31,16 +32,9 @@ func initHandle(t *testing.T) gerrit {
 	c, err := initConfig("../tests/config.yml")
 	assert.Equal(t, nil, err)
 
-	var g gerrit
-
-	for index := range c.Spec.Review {
-		if c.Spec.Review[index].Name == "gerrit" {
-			g.r = c.Spec.Review[index]
-			break
-		}
+	return gerrit{
+		r: c.Spec.Review,
 	}
-
-	return g
 }
 
 func TestClean(t *testing.T) {
@@ -95,21 +89,28 @@ func TestVote(t *testing.T) {
 
 	buf := make([]proto.Format, 0)
 
-	err := h.Vote("", buf)
+	vote := config.Vote{
+		Label:       "Lint-Verified",
+		Approval:    "+1",
+		Disapproval: "-1",
+		Message:     "Voting Lint-Verified by lintflow",
+	}
+
+	err := h.Vote("", buf, vote)
 	assert.NotEqual(t, nil, err)
 
-	err = h.Vote(commitGerrit, buf)
+	err = h.Vote(commitGerrit, buf, vote)
 	assert.Equal(t, nil, err)
 
 	buf = make([]proto.Format, 1)
 	buf[0] = proto.Format{
-		Details: "Disapproved",
 		File:    "AndroidManifest.xml",
 		Line:    1,
 		Type:    proto.TypeError,
+		Details: "Disapproved",
 	}
 
-	err = h.Vote(commitGerrit, buf)
+	err = h.Vote(commitGerrit, buf, vote)
 	assert.Equal(t, nil, err)
 }
 

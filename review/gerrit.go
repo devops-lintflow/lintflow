@@ -186,7 +186,7 @@ func (g *gerrit) Query(search string, start int) ([]interface{}, error) {
 }
 
 // nolint:funlen,gocyclo
-func (g *gerrit) Vote(commit string, data []proto.Format) error {
+func (g *gerrit) Vote(commit string, data []proto.Format, vote config.Vote) error {
 	match := func(data proto.Format, diffs []*diff.FileDiff) bool {
 		for _, d := range diffs {
 			if strings.Replace(d.PathNew, pathPrefix, "", 1) != data.File {
@@ -208,7 +208,7 @@ func (g *gerrit) Vote(commit string, data []proto.Format) error {
 
 	build := func(data []proto.Format, diffs []*diff.FileDiff) (map[string]interface{}, map[string]interface{}, string) {
 		if len(data) == 0 {
-			return nil, map[string]interface{}{g.r.Vote.Label: g.r.Vote.Approval}, g.r.Vote.Message
+			return nil, map[string]interface{}{vote.Label: vote.Approval}, vote.Message
 		}
 		c := map[string]interface{}{}
 		for _, item := range data {
@@ -227,9 +227,9 @@ func (g *gerrit) Vote(commit string, data []proto.Format) error {
 			}
 		}
 		if len(c) == 0 {
-			return nil, map[string]interface{}{g.r.Vote.Label: g.r.Vote.Approval}, g.r.Vote.Message
+			return nil, map[string]interface{}{vote.Label: vote.Approval}, vote.Message
 		} else {
-			return c, map[string]interface{}{g.r.Vote.Label: g.r.Vote.Disapproval}, g.r.Vote.Message
+			return c, map[string]interface{}{vote.Label: vote.Disapproval}, vote.Message
 		}
 	}
 

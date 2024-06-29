@@ -14,13 +14,17 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	"github.com/devops-lintflow/lintflow/cmd"
 )
 
 func main() {
-	if err := cmd.Run(context.Background()); err != nil {
+	ctx := context.Background()
+
+	if err := cmd.Run(ctx); err != nil {
+		fmt.Println(err.Error())
 		os.Exit(1)
 	}
 

@@ -68,8 +68,7 @@ func TestReview(t *testing.T) {
 	assert.Equal(t, nil, err)
 
 	cfg := DefaultConfig()
-	cfg.Name = reviewGerrit
-	cfg.Reviews = c.Spec.Review
+	cfg.Review = c.Spec.Review
 
 	r := New(cfg)
 
@@ -82,18 +81,25 @@ func TestReview(t *testing.T) {
 
 	buf := make([]proto.Format, 0)
 
-	err = r.Vote(commitGerrit, buf)
+	vote := config.Vote{
+		Label:       "Lint-Verified",
+		Approval:    "+1",
+		Disapproval: "-1",
+		Message:     "Voting Lint-Verified by lintflow",
+	}
+
+	err = r.Vote(commitGerrit, buf, vote)
 	assert.Equal(t, nil, err)
 
 	buf = make([]proto.Format, 1)
 	buf[0] = proto.Format{
-		Details: "Disapproved",
 		File:    "AndroidManifest.xml",
 		Line:    1,
 		Type:    proto.TypeError,
+		Details: "Disapproved",
 	}
 
-	err = r.Vote(commitGerrit, buf)
+	err = r.Vote(commitGerrit, buf, vote)
 	assert.Equal(t, nil, err)
 
 	err = r.Clean(root)
