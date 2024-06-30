@@ -25,7 +25,7 @@
 
 ```bash
 make build
-./bin/lintflow --config-file="config.yml" --code-review="gerrit" --commit-hash="{hash}"
+./bin/lintflow --config-file="tests/config.yml" --code-review="gerrit" --commit-hash="{hash}"
 ```
 
 
@@ -34,7 +34,7 @@ make build
 
 ```bash
 docker build --no-cache -f Dockerfile -t devops-lintflow/lintflow:latest .
-docker run devops-lintflow/lintflow:latest /lintflow --config-file="/config.yml" --code-review="gerrit" --commit-hash="{hash}"
+docker run devops-lintflow/lintflow:latest /lintflow --config-file="config.yml" --code-review="gerrit" --commit-hash="{hash}"
 ```
 
 
@@ -60,10 +60,10 @@ usage: lintflow --code-review=CODE-REVIEW --commit-hash=COMMIT-HASH --config-fil
 
 Lint Flow
 
+
 Flags:
-  --help                     Show context-sensitive help (also try --help-long
-                             and --help-man).
-  --version                  Show application version.
+  --[no-]help                Show context-sensitive help (also try --help-long and --help-man).
+  --[no-]version             Show application version.
   --code-review=CODE-REVIEW  Code review (bitbucket|gerrit|gitee|github|gitlab)
   --commit-hash=COMMIT-HASH  Commit hash (SHA-1)
   --config-file=CONFIG-FILE  Config file (.yml)
