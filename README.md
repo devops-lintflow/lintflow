@@ -105,7 +105,7 @@ spec:
       vote: AI-Verified
     - name: lintcpp
       host: 127.0.0.1
-      port: 9091
+      port: 9090
       filter:
         include:
           extension:
@@ -121,7 +121,7 @@ spec:
       vote: Lint-Verified
     - name: lintjava
       host: 127.0.0.1
-      port: 9092
+      port: 9090
       filter:
         include:
           extension:
@@ -134,7 +134,7 @@ spec:
       vote: Lint-Verified
     - name: lintpython
       host: 127.0.0.1
-      port: 9093
+      port: 9090
       filter:
         include:
           extension:
@@ -146,7 +146,7 @@ spec:
       vote: Lint-Verified
     - name: lintshell
       host: 127.0.0.1
-      port: 9094
+      port: 9090
       filter:
         include:
           extension:
@@ -158,8 +158,7 @@ spec:
       vote: Lint-Verified
   review:
     name: gerrit
-    host: http://127.0.0.1/
-    port: 8080
+    url: http://127.0.0.1:8080
     user: user
     pass: pass
     vote:

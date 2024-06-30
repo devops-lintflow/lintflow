@@ -331,11 +331,11 @@ func (g *gerrit) unmarshalList(data []byte) ([]interface{}, error) {
 }
 
 func (g *gerrit) urlContent(change, revision int, name string) string {
-	buf := strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + urlChanges + strconv.Itoa(change) +
+	buf := g.r.Url + urlChanges + strconv.Itoa(change) +
 		urlRevisions + strconv.Itoa(revision) + urlFiles + url.QueryEscape(name) + urlContent
 
 	if g.r.User != "" && g.r.Pass != "" {
-		buf = strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + urlPrefix + urlChanges + strconv.Itoa(change) +
+		buf = g.r.Url + urlPrefix + urlChanges + strconv.Itoa(change) +
 			urlRevisions + strconv.Itoa(revision) + urlFiles + url.QueryEscape(name) + urlContent
 	}
 
@@ -343,21 +343,21 @@ func (g *gerrit) urlContent(change, revision int, name string) string {
 }
 
 func (g *gerrit) urlDetail(change int) string {
-	buf := strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + urlChanges + strconv.Itoa(change) + urlDetail
+	buf := g.r.Url + urlChanges + strconv.Itoa(change) + urlDetail
 
 	if g.r.User != "" && g.r.Pass != "" {
-		buf = strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + urlPrefix + urlChanges + strconv.Itoa(change) + urlDetail
+		buf = g.r.Url + urlPrefix + urlChanges + strconv.Itoa(change) + urlDetail
 	}
 
 	return buf
 }
 
 func (g *gerrit) urlFiles(change, revision int) string {
-	buf := strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + urlChanges + strconv.Itoa(change) +
+	buf := g.r.Url + urlChanges + strconv.Itoa(change) +
 		urlRevisions + strconv.Itoa(revision) + urlFiles
 
 	if g.r.User != "" && g.r.Pass != "" {
-		buf = strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + urlPrefix + urlChanges + strconv.Itoa(change) +
+		buf = g.r.Url + urlPrefix + urlChanges + strconv.Itoa(change) +
 			urlRevisions + strconv.Itoa(revision) + urlFiles
 	}
 
@@ -365,11 +365,11 @@ func (g *gerrit) urlFiles(change, revision int) string {
 }
 
 func (g *gerrit) urlPatch(change, revision int) string {
-	buf := strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + urlChanges + strconv.Itoa(change) +
+	buf := g.r.Url + urlChanges + strconv.Itoa(change) +
 		urlRevisions + strconv.Itoa(revision) + urlPatch
 
 	if g.r.User != "" && g.r.Pass != "" {
-		buf = strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + urlPrefix + urlChanges + strconv.Itoa(change) +
+		buf = g.r.Url + urlPrefix + urlChanges + strconv.Itoa(change) +
 			urlRevisions + strconv.Itoa(revision) + urlPatch
 	}
 
@@ -382,20 +382,20 @@ func (g *gerrit) urlQuery(search string, option []string, start int) string {
 		urlStart + strconv.Itoa(start) +
 		urlNumber + strconv.Itoa(queryLimit)
 
-	buf := strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + urlChanges + query
+	buf := g.r.Url + urlChanges + query
 	if g.r.User != "" && g.r.Pass != "" {
-		buf = strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + urlPrefix + urlChanges + query
+		buf = g.r.Url + urlPrefix + urlChanges + query
 	}
 
 	return buf
 }
 
 func (g *gerrit) urlReview(change, revision int) string {
-	buf := strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + urlChanges + strconv.Itoa(change) +
+	buf := g.r.Url + urlChanges + strconv.Itoa(change) +
 		urlRevisions + strconv.Itoa(revision) + urlReview
 
 	if g.r.User != "" && g.r.Pass != "" {
-		buf = strings.TrimSuffix(g.r.Host, "/") + ":" + strconv.Itoa(g.r.Port) + urlPrefix + urlChanges + strconv.Itoa(change) +
+		buf = g.r.Url + urlPrefix + urlChanges + strconv.Itoa(change) +
 			urlRevisions + strconv.Itoa(revision) + urlReview
 	}
 

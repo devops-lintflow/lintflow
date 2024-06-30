@@ -53,8 +53,7 @@ type Include struct {
 
 type Review struct {
 	Name  string `yaml:"name"`
-	Host  string `yaml:"host"`
-	Port  int    `yaml:"port"`
+	Url   string `yaml:"url"`
 	User  string `yaml:"user"`
 	Pass  string `yaml:"pass"`
 	Votes []Vote `yaml:"vote"`
