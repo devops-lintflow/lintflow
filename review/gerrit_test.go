@@ -16,7 +16,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/devops-lintflow/lintflow/config"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -25,7 +24,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/devops-lintflow/lintflow/proto"
+	"github.com/devops-lintflow/lintflow/config"
+	"github.com/devops-lintflow/lintflow/format"
 )
 
 func initHandle(t *testing.T) gerrit {
@@ -87,7 +87,7 @@ func TestQuery(t *testing.T) {
 func TestVote(t *testing.T) {
 	h := initHandle(t)
 
-	buf := make([]proto.Format, 0)
+	buf := make([]format.Format, 0)
 
 	vote := config.Vote{
 		Label:       "Lint-Verified",
@@ -102,11 +102,11 @@ func TestVote(t *testing.T) {
 	err = h.Vote(commitGerrit, buf, vote)
 	assert.Equal(t, nil, err)
 
-	buf = make([]proto.Format, 1)
-	buf[0] = proto.Format{
+	buf = make([]format.Format, 1)
+	buf[0] = format.Format{
 		File:    "AndroidManifest.xml",
 		Line:    1,
-		Type:    proto.TypeError,
+		Type:    format.TypeError,
 		Details: "Disapproved",
 	}
 

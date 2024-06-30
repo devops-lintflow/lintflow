@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package proto
+package format
 
 import (
 	"testing"
@@ -18,6 +18,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestProto(t *testing.T) {
+func TestFormat(t *testing.T) {
 	assert.Equal(t, nil, nil)
 }

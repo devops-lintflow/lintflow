@@ -22,7 +22,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/devops-lintflow/lintflow/config"
-	"github.com/devops-lintflow/lintflow/proto"
+	"github.com/devops-lintflow/lintflow/format"
 )
 
 func initConfig(name string) (*config.Config, error) {
@@ -118,12 +118,12 @@ func TestBuildLabel(t *testing.T) {
 		cfg: cfg,
 	}
 
-	buf := map[string][]proto.Format{
+	buf := map[string][]format.Format{
 		"lintai": {
 			{
 				File:    "/path/to/file1",
 				Line:    1,
-				Type:    proto.TypeError,
+				Type:    format.TypeError,
 				Details: "Disapproved",
 			},
 		},
@@ -131,7 +131,7 @@ func TestBuildLabel(t *testing.T) {
 			{
 				File:    "/path/to/file2",
 				Line:    1,
-				Type:    proto.TypeWarn,
+				Type:    format.TypeWarn,
 				Details: "Disapproved",
 			},
 		},

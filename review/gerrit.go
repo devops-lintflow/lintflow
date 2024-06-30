@@ -29,7 +29,7 @@ import (
 	"github.com/reviewdog/reviewdog/diff"
 
 	"github.com/devops-lintflow/lintflow/config"
-	"github.com/devops-lintflow/lintflow/proto"
+	"github.com/devops-lintflow/lintflow/format"
 )
 
 const (
@@ -126,9 +126,9 @@ func (g *gerrit) Fetch(root, commit string) (dname, rname string, flist []string
 			return "", "", nil, errors.Wrap(err, "failed to content")
 		}
 
-		file := filepath.Base(key) + proto.Base64Content
+		file := filepath.Base(key) + format.Base64Content
 		if key == commitMsg {
-			file = proto.Base64Message
+			file = format.Base64Message
 		}
 
 		err = g.write(filepath.Join(path, filepath.Dir(key)), file, string(buf))
@@ -142,9 +142,9 @@ func (g *gerrit) Fetch(root, commit string) (dname, rname string, flist []string
 
 	for key := range fs {
 		if key == commitMsg {
-			files = append(files, proto.Base64Message)
+			files = append(files, format.Base64Message)
 		} else {
-			files = append(files, filepath.Join(filepath.Dir(key), filepath.Base(key)+proto.Base64Content))
+			files = append(files, filepath.Join(filepath.Dir(key), filepath.Base(key)+format.Base64Content))
 		}
 	}
 
@@ -186,8 +186,8 @@ func (g *gerrit) Query(search string, start int) ([]interface{}, error) {
 }
 
 // nolint:funlen,gocyclo
-func (g *gerrit) Vote(commit string, data []proto.Format, vote config.Vote) error {
-	match := func(data proto.Format, diffs []*diff.FileDiff) bool {
+func (g *gerrit) Vote(commit string, data []format.Format, vote config.Vote) error {
+	match := func(data format.Format, diffs []*diff.FileDiff) bool {
 		for _, d := range diffs {
 			if strings.Replace(d.PathNew, pathPrefix, "", 1) != data.File {
 				continue
@@ -206,7 +206,7 @@ func (g *gerrit) Vote(commit string, data []proto.Format, vote config.Vote) erro
 		return false
 	}
 
-	build := func(data []proto.Format, diffs []*diff.FileDiff) (map[string]interface{}, map[string]interface{}, string) {
+	build := func(data []format.Format, diffs []*diff.FileDiff) (map[string]interface{}, map[string]interface{}, string) {
 		if len(data) == 0 {
 			return nil, map[string]interface{}{vote.Label: vote.Approval}, vote.Message
 		}

@@ -22,8 +22,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/devops-lintflow/lintflow/config"
+	"github.com/devops-lintflow/lintflow/format"
 	"github.com/devops-lintflow/lintflow/lint"
-	"github.com/devops-lintflow/lintflow/proto"
 	"github.com/devops-lintflow/lintflow/review"
 )
 
@@ -92,7 +92,7 @@ func (f *flow) Run(ctx context.Context, commit string) error {
 func (f *flow) matchFilter(filter *config.Filter, repo, file string) bool {
 	matchExtension := func(filter *config.Filter, data string) bool {
 		for _, val := range filter.Include.Extensions {
-			if val == filepath.Ext(strings.TrimSuffix(data, proto.Base64Content)) {
+			if val == filepath.Ext(strings.TrimSuffix(data, format.Base64Content)) {
 				return true
 			}
 		}
@@ -101,7 +101,7 @@ func (f *flow) matchFilter(filter *config.Filter, repo, file string) bool {
 
 	matchFile := func(filter *config.Filter, data string) bool {
 		for _, val := range filter.Include.Files {
-			if val == filepath.Base(strings.TrimSuffix(data, proto.Base64Content)) {
+			if val == filepath.Base(strings.TrimSuffix(data, format.Base64Content)) {
 				return true
 			}
 		}
@@ -135,7 +135,7 @@ func (f *flow) matchFilter(filter *config.Filter, repo, file string) bool {
 	return true
 }
 
-func (f *flow) buildLabel(data map[string][]proto.Format) map[string][]proto.Format {
+func (f *flow) buildLabel(data map[string][]format.Format) map[string][]format.Format {
 	helper := func(name string) string {
 		var buf string
 		lints := f.cfg.Config.Spec.Lints
@@ -148,7 +148,7 @@ func (f *flow) buildLabel(data map[string][]proto.Format) map[string][]proto.For
 		return buf
 	}
 
-	buf := map[string][]proto.Format{}
+	buf := map[string][]format.Format{}
 
 	for key, val := range data {
 		if vote := helper(key); vote != "" {

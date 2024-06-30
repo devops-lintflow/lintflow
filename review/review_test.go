@@ -24,7 +24,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/devops-lintflow/lintflow/config"
-	"github.com/devops-lintflow/lintflow/proto"
+	"github.com/devops-lintflow/lintflow/format"
 )
 
 const (
@@ -79,7 +79,7 @@ func TestReview(t *testing.T) {
 	_, _, _, err = r.Fetch(root, commitGerrit)
 	assert.Equal(t, nil, err)
 
-	buf := make([]proto.Format, 0)
+	buf := make([]format.Format, 0)
 
 	vote := config.Vote{
 		Label:       "Lint-Verified",
@@ -91,11 +91,11 @@ func TestReview(t *testing.T) {
 	err = r.Vote(commitGerrit, buf, vote)
 	assert.Equal(t, nil, err)
 
-	buf = make([]proto.Format, 1)
-	buf[0] = proto.Format{
+	buf = make([]format.Format, 1)
+	buf[0] = format.Format{
 		File:    "AndroidManifest.xml",
 		Line:    1,
-		Type:    proto.TypeError,
+		Type:    format.TypeError,
 		Details: "Disapproved",
 	}
 

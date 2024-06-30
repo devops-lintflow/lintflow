@@ -26,11 +26,11 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/devops-lintflow/lintflow/config"
-	"github.com/devops-lintflow/lintflow/proto"
+	"github.com/devops-lintflow/lintflow/format"
 )
 
 type Lint interface {
-	Run(context.Context, string, string, []string, func(*config.Filter, string, string) bool) (map[string][]proto.Format, error)
+	Run(context.Context, string, string, []string, func(*config.Filter, string, string) bool) (map[string][]format.Format, error)
 }
 
 type Config struct {
@@ -53,7 +53,7 @@ func DefaultConfig() *Config {
 
 // nolint:gosec
 func (l *lint) Run(ctx context.Context, root, repo string, files []string,
-	match func(*config.Filter, string, string) bool) (map[string][]proto.Format, error) {
+	match func(*config.Filter, string, string) bool) (map[string][]format.Format, error) {
 	helper := func(filter *config.Filter, files []string) []string {
 		var buf []string
 		for _, item := range files {
@@ -65,7 +65,7 @@ func (l *lint) Run(ctx context.Context, root, repo string, files []string,
 	}
 
 	type result struct {
-		data map[string][]proto.Format
+		data map[string][]format.Format
 		err  error
 	}
 
@@ -91,7 +91,7 @@ func (l *lint) Run(ctx context.Context, root, repo string, files []string,
 				}
 				ch <- result{r, nil}
 			} else {
-				ch <- result{map[string][]proto.Format{}, nil}
+				ch <- result{map[string][]format.Format{}, nil}
 			}
 		}(ctx, buf, l.cfg.Lints[i])
 	}
@@ -100,7 +100,7 @@ func (l *lint) Run(ctx context.Context, root, repo string, files []string,
 		return nil, nil
 	}
 
-	ret := map[string][]proto.Format{}
+	ret := map[string][]format.Format{}
 
 	for range l.cfg.Lints {
 		r := <-ch
@@ -168,9 +168,9 @@ func (l *lint) marshal(root string, data []string) ([]byte, error) {
 	return ret, nil
 }
 
-func (l *lint) routine(ctx context.Context, host string, port int, data []byte) (map[string][]proto.Format, error) {
-	helper := func(data string) (map[string][]proto.Format, error) {
-		var buf map[string][]proto.Format
+func (l *lint) routine(ctx context.Context, host string, port int, data []byte) (map[string][]format.Format, error) {
+	helper := func(data string) (map[string][]format.Format, error) {
+		var buf map[string][]format.Format
 		if err := json.Unmarshal([]byte(data), &buf); err != nil {
 			return nil, errors.Wrap(err, "failed to unmarshal")
 		}
