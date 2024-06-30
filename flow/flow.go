@@ -135,7 +135,7 @@ func (f *flow) matchFilter(filter *config.Filter, repo, file string) bool {
 	return true
 }
 
-func (f *flow) buildLabel(data map[string][]format.Format) map[string][]format.Format {
+func (f *flow) buildLabel(data map[string][]format.Report) map[string][]format.Report {
 	helper := func(name string) string {
 		var buf string
 		lints := f.cfg.Config.Spec.Lints
@@ -148,7 +148,7 @@ func (f *flow) buildLabel(data map[string][]format.Format) map[string][]format.F
 		return buf
 	}
 
-	buf := map[string][]format.Format{}
+	buf := map[string][]format.Report{}
 
 	for key, val := range data {
 		if vote := helper(key); vote != "" {

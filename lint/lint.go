@@ -30,7 +30,7 @@ import (
 )
 
 type Lint interface {
-	Run(context.Context, string, string, []string, func(*config.Filter, string, string) bool) (map[string][]format.Format, error)
+	Run(context.Context, string, string, []string, func(*config.Filter, string, string) bool) (map[string][]format.Report, error)
 }
 
 type Config struct {
@@ -53,7 +53,7 @@ func DefaultConfig() *Config {
 
 // nolint:gosec
 func (l *lint) Run(ctx context.Context, root, repo string, files []string,
-	match func(*config.Filter, string, string) bool) (map[string][]format.Format, error) {
+	match func(*config.Filter, string, string) bool) (map[string][]format.Report, error) {
 	helper := func(filter *config.Filter, files []string) []string {
 		var buf []string
 		for _, item := range files {
@@ -65,7 +65,7 @@ func (l *lint) Run(ctx context.Context, root, repo string, files []string,
 	}
 
 	type result struct {
-		data map[string][]format.Format
+		data map[string][]format.Report
 		err  error
 	}
 
@@ -91,7 +91,7 @@ func (l *lint) Run(ctx context.Context, root, repo string, files []string,
 				}
 				ch <- result{r, nil}
 			} else {
-				ch <- result{map[string][]format.Format{}, nil}
+				ch <- result{map[string][]format.Report{}, nil}
 			}
 		}(ctx, buf, l.cfg.Lints[i])
 	}
@@ -100,7 +100,7 @@ func (l *lint) Run(ctx context.Context, root, repo string, files []string,
 		return nil, nil
 	}
 
-	ret := map[string][]format.Format{}
+	ret := map[string][]format.Report{}
 
 	for range l.cfg.Lints {
 		r := <-ch
@@ -168,9 +168,9 @@ func (l *lint) marshal(root string, data []string) ([]byte, error) {
 	return ret, nil
 }
 
-func (l *lint) routine(ctx context.Context, host string, port int, data []byte) (map[string][]format.Format, error) {
-	helper := func(data string) (map[string][]format.Format, error) {
-		var buf map[string][]format.Format
+func (l *lint) routine(ctx context.Context, host string, port int, data []byte) (map[string][]format.Report, error) {
+	helper := func(data string) (map[string][]format.Report, error) {
+		var buf map[string][]format.Report
 		if err := json.Unmarshal([]byte(data), &buf); err != nil {
 			return nil, errors.Wrap(err, "failed to unmarshal")
 		}

@@ -118,7 +118,7 @@ func TestBuildLabel(t *testing.T) {
 		cfg: cfg,
 	}
 
-	buf := map[string][]format.Format{
+	buf := map[string][]format.Report{
 		"lintai": {
 			{
 				File:    "/path/to/file1",

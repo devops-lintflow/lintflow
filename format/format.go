@@ -12,17 +12,6 @@
 
 package format
 
-// {
-//   "lint": [
-//     {
-//       "file": "name",
-//       "line": 1,
-//       "type": "Error",
-//       "details": "text"
-//     }
-//   ]
-// }
-
 const (
 	Base64Content = ".base64"
 	Base64Message = "message.base64"
@@ -34,7 +23,7 @@ const (
 	TypeWarn  = "Warn"
 )
 
-type Format struct {
+type Report struct {
 	File    string `json:"file"`
 	Line    int    `json:"line"`
 	Type    string `json:"type"`

@@ -22,7 +22,7 @@ import (
 type Review interface {
 	Clean(string) error
 	Fetch(string, string) (string, string, []string, error)
-	Vote(string, []format.Format, config.Vote) error
+	Vote(string, []format.Report, config.Vote) error
 }
 
 type Config struct {
@@ -70,7 +70,7 @@ func (r *review) Fetch(root, commit string) (dname, rname string, flist []string
 	return dir, repo, files, nil
 }
 
-func (r *review) Vote(commit string, data []format.Format, vote config.Vote) error {
+func (r *review) Vote(commit string, data []format.Report, vote config.Vote) error {
 	if r.hdl == nil {
 		return errors.New("invalid handle")
 	}

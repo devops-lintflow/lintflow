@@ -186,8 +186,8 @@ func (g *gerrit) Query(search string, start int) ([]interface{}, error) {
 }
 
 // nolint:funlen,gocyclo
-func (g *gerrit) Vote(commit string, data []format.Format, vote config.Vote) error {
-	match := func(data format.Format, diffs []*diff.FileDiff) bool {
+func (g *gerrit) Vote(commit string, data []format.Report, vote config.Vote) error {
+	match := func(data format.Report, diffs []*diff.FileDiff) bool {
 		for _, d := range diffs {
 			if strings.Replace(d.PathNew, pathPrefix, "", 1) != data.File {
 				continue
@@ -206,7 +206,7 @@ func (g *gerrit) Vote(commit string, data []format.Format, vote config.Vote) err
 		return false
 	}
 
-	build := func(data []format.Format, diffs []*diff.FileDiff) (map[string]interface{}, map[string]interface{}, string) {
+	build := func(data []format.Report, diffs []*diff.FileDiff) (map[string]interface{}, map[string]interface{}, string) {
 		if len(data) == 0 {
 			return nil, map[string]interface{}{vote.Label: vote.Approval}, vote.Message
 		}

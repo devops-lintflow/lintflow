@@ -79,7 +79,7 @@ func TestReview(t *testing.T) {
 	_, _, _, err = r.Fetch(root, commitGerrit)
 	assert.Equal(t, nil, err)
 
-	buf := make([]format.Format, 0)
+	buf := make([]format.Report, 0)
 
 	vote := config.Vote{
 		Label:       "Lint-Verified",
@@ -91,8 +91,8 @@ func TestReview(t *testing.T) {
 	err = r.Vote(commitGerrit, buf, vote)
 	assert.Equal(t, nil, err)
 
-	buf = make([]format.Format, 1)
-	buf[0] = format.Format{
+	buf = make([]format.Report, 1)
+	buf[0] = format.Report{
 		File:    "AndroidManifest.xml",
 		Line:    1,
 		Type:    format.TypeError,
