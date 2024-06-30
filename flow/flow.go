@@ -16,7 +16,6 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -57,7 +56,7 @@ func (f *flow) Run(ctx context.Context, commit string) error {
 
 	root := filepath.Join(d, "gerrit-"+t.Format("2006-01-02"))
 
-	dir, repo, files, err := f.cfg.Review.Fetch(root, commit)
+	dir, repo, files, patch, err := f.cfg.Review.Fetch(root, commit)
 
 	defer func() {
 		_ = f.cfg.Review.Clean(root)
@@ -67,7 +66,7 @@ func (f *flow) Run(ctx context.Context, commit string) error {
 		return errors.Wrap(err, "failed to clean reivew")
 	}
 
-	buf, err := f.cfg.Lint.Run(ctx, dir, repo, files, f.matchFilter)
+	buf, err := f.cfg.Lint.Run(ctx, dir, repo, files, patch, f.matchFilter)
 	if err != nil {
 		return errors.Wrap(err, "failed to run lint")
 	}
@@ -78,9 +77,9 @@ func (f *flow) Run(ctx context.Context, commit string) error {
 
 	labels := f.buildLabel(buf)
 
-	for label, data := range labels {
+	for label, reports := range labels {
 		if vote := f.buildVote(label); vote.Label != "" {
-			if err := f.cfg.Review.Vote(commit, data, vote); err != nil {
+			if err := f.cfg.Review.Vote(commit, reports, vote); err != nil {
 				return errors.Wrap(err, "failed to vote reivew")
 			}
 		}
@@ -92,7 +91,7 @@ func (f *flow) Run(ctx context.Context, commit string) error {
 func (f *flow) matchFilter(filter *config.Filter, repo, file string) bool {
 	matchExtension := func(filter *config.Filter, data string) bool {
 		for _, val := range filter.Include.Extensions {
-			if val == filepath.Ext(strings.TrimSuffix(data, format.Base64Content)) {
+			if val == filepath.Ext(data) {
 				return true
 			}
 		}
@@ -101,7 +100,7 @@ func (f *flow) matchFilter(filter *config.Filter, repo, file string) bool {
 
 	matchFile := func(filter *config.Filter, data string) bool {
 		for _, val := range filter.Include.Files {
-			if val == filepath.Base(strings.TrimSuffix(data, format.Base64Content)) {
+			if val == filepath.Base(data) {
 				return true
 			}
 		}

@@ -25,10 +25,7 @@ const (
 // LintProtoClient is the client API for LintProto service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-//
-// The service definition.
 type LintProtoClient interface {
-	// Sends lint
 	SendLint(ctx context.Context, in *LintRequest, opts ...grpc.CallOption) (*LintReply, error)
 }
 
@@ -53,10 +50,7 @@ func (c *lintProtoClient) SendLint(ctx context.Context, in *LintRequest, opts ..
 // LintProtoServer is the server API for LintProto service.
 // All implementations must embed UnimplementedLintProtoServer
 // for forward compatibility
-//
-// The service definition.
 type LintProtoServer interface {
-	// Sends lint
 	SendLint(context.Context, *LintRequest) (*LintReply, error)
 	mustEmbedUnimplementedLintProtoServer()
 }

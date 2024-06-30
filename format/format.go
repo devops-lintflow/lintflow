@@ -13,11 +13,6 @@
 package format
 
 const (
-	Base64Content = ".base64"
-	Base64Message = "message.base64"
-)
-
-const (
 	TypeError = "Error"
 	TypeInfo  = "Info"
 	TypeWarn  = "Warn"

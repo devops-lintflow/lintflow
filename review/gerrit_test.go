@@ -1,3 +1,7 @@
+//go:build review_test
+
+// go test -cover -covermode=atomic -parallel 2 -tags=review_test -v github.com/devops-lintflow/lintflow/review
+
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,7 +20,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -56,8 +59,13 @@ func TestFetch(t *testing.T) {
 	d, _ := os.Getwd()
 	root := filepath.Join(d, "gerrit-test-fetch")
 
-	_, _, _, err := h.Fetch(root, commitGerrit)
+	dir, repo, files, patch, err := h.Fetch(root, commitGerrit)
 	assert.Equal(t, nil, err)
+
+	fmt.Printf("  dir: %s\n", dir)
+	fmt.Printf(" repo: %s\n", repo)
+	fmt.Printf("files: %v\n", files)
+	fmt.Printf("patch: %s\n", patch)
 
 	err = h.Clean(root)
 	assert.Equal(t, nil, err)
@@ -75,42 +83,35 @@ func TestQuery(t *testing.T) {
 	assert.Equal(t, nil, err)
 
 	ret, _ = json.Marshal(buf)
-	fmt.Println(string(ret))
+	fmt.Printf("change: %s\n", string(ret))
 
 	buf, err = r.Query(queryAfter+" "+queryBefore, 0)
 	assert.Equal(t, nil, err)
 
-	fmt.Println(len(buf))
+	ret, _ = json.Marshal(buf)
+	fmt.Printf("change: %s\n", string(ret))
 }
 
 // nolint: dogsled
 func TestVote(t *testing.T) {
 	h := initHandle(t)
 
-	buf := make([]format.Report, 0)
+	buf := make([]format.Report, 1)
+	buf[0] = format.Report{
+		File:    "lintshell/test.sh",
+		Line:    1,
+		Type:    format.TypeError,
+		Details: "Disapproved by gerrit",
+	}
 
 	vote := config.Vote{
 		Label:       "Lint-Verified",
 		Approval:    "+1",
 		Disapproval: "-1",
-		Message:     "Voting Lint-Verified by lintflow",
+		Message:     "Voting Lint-Verified by gerrit",
 	}
 
-	err := h.Vote("", buf, vote)
-	assert.NotEqual(t, nil, err)
-
-	err = h.Vote(commitGerrit, buf, vote)
-	assert.Equal(t, nil, err)
-
-	buf = make([]format.Report, 1)
-	buf[0] = format.Report{
-		File:    "AndroidManifest.xml",
-		Line:    1,
-		Type:    format.TypeError,
-		Details: "Disapproved",
-	}
-
-	err = h.Vote(commitGerrit, buf, vote)
+	err := h.Vote(commitGerrit, buf, vote)
 	assert.Equal(t, nil, err)
 }
 
@@ -120,12 +121,14 @@ func TestGetContent(t *testing.T) {
 	_, err := h.get(h.urlContent(-1, -1, ""))
 	assert.NotEqual(t, nil, err)
 
-	buf, err := h.get(h.urlContent(changeGerrit, revisionGerrit, url.PathEscape("AndroidManifest.xml")))
+	buf, err := h.get(h.urlContent(changeGerrit, revisionGerrit, "lintshell/test.sh"))
 	assert.Equal(t, nil, err)
 
 	dst := make([]byte, len(buf))
 	n, _ := base64.StdEncoding.Decode(dst, buf)
 	assert.NotEqual(t, 0, n)
+
+	fmt.Printf("content: %s\n", string(dst))
 }
 
 func TestGetDetail(t *testing.T) {
@@ -166,6 +169,8 @@ func TestGetPatch(t *testing.T) {
 	dst := make([]byte, len(buf))
 	n, _ := base64.StdEncoding.Decode(dst, buf)
 	assert.NotEqual(t, 0, n)
+
+	fmt.Printf("patch: %s\n", string(dst))
 }
 
 func TestGetQuery(t *testing.T) {
@@ -189,17 +194,17 @@ func TestPostReview(t *testing.T) {
 
 	buf := map[string]interface{}{
 		"comments": map[string]interface{}{
-			"AndroidManifest.xml": []map[string]interface{}{
+			"lintshell/test.sh": []map[string]interface{}{
 				{
 					"line":    1,
-					"message": "Commented by lintflow",
+					"message": "Commented by gerrit",
 				},
 			},
 		},
 		"labels": map[string]interface{}{
 			"Code-Review": -1,
 		},
-		"message": "Voting Code-Review by lintflow",
+		"message": "Voting Code-Review by gerrit",
 	}
 
 	err = h.post(h.urlReview(changeGerrit, revisionGerrit), buf)

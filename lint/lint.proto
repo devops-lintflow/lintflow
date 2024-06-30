@@ -9,9 +9,29 @@ service LintProto {
 }
 
 message LintRequest {
-  string message = 1;
+  string name = 1;
+  repeated LintFile lintFiles = 2;
+  LintPatch lintPatch = 3;
+}
+
+message LintFile {
+  string path = 1;
+  bytes content = 2;
+}
+
+message LintPatch {
+  string path = 1;
+  bytes content = 2;
 }
 
 message LintReply {
-  string message = 1;
+  string name = 1;
+  repeated LintReport lintReports = 2;
+}
+
+message LintReport {
+  string file = 1;
+  int64 line = 2;
+  string type = 3;
+  string details = 4;
 }

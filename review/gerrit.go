@@ -50,13 +50,14 @@ const (
 
 const (
 	commitMsg   = "/COMMIT_MSG"
+	commitPatch = "commit.patch"
 	commitQuery = "commit"
 )
 
 const (
 	diffBin    = "Binary files differ"
 	diffSep    = "diff --git"
-	pathPrefix = "b/"
+	diffPrefix = "b/"
 )
 
 type gerrit struct {
@@ -72,7 +73,7 @@ func (g *gerrit) Clean(name string) error {
 }
 
 // nolint:funlen,gocyclo
-func (g *gerrit) Fetch(root, commit string) (dname, rname string, flist []string, emsg error) {
+func (g *gerrit) Fetch(root, commit string) (dname, rname string, flist []string, pname string, emsg error) {
 	filterFiles := func(data map[string]interface{}) map[string]interface{} {
 		buf := make(map[string]interface{})
 		for key, val := range data {
@@ -89,12 +90,12 @@ func (g *gerrit) Fetch(root, commit string) (dname, rname string, flist []string
 	// Query commit
 	buf, err := g.get(g.urlQuery(commitQuery+":"+commit, []string{"CURRENT_REVISION"}, 0))
 	if err != nil {
-		return "", "", nil, errors.Wrap(err, "failed to query")
+		return "", "", nil, "", errors.Wrap(err, "failed to query")
 	}
 
 	queryRet, err := g.unmarshalList(buf)
 	if err != nil {
-		return "", "", nil, errors.Wrap(err, "failed to unmarshalList")
+		return "", "", nil, "", errors.Wrap(err, "failed to unmarshalList")
 	}
 
 	revisions := queryRet[0].(map[string]interface{})["revisions"].(map[string]interface{})
@@ -108,12 +109,12 @@ func (g *gerrit) Fetch(root, commit string) (dname, rname string, flist []string
 	// Get files
 	buf, err = g.get(g.urlFiles(changeNum, revisionNum))
 	if err != nil {
-		return "", "", nil, errors.Wrap(err, "failed to files")
+		return "", "", nil, "", errors.Wrap(err, "failed to get files")
 	}
 
 	fs, err := g.unmarshal(buf)
 	if err != nil {
-		return "", "", nil, errors.Wrap(err, "failed to unmarshal")
+		return "", "", nil, "", errors.Wrap(err, "failed to unmarshal")
 	}
 
 	// Match files
@@ -123,32 +124,42 @@ func (g *gerrit) Fetch(root, commit string) (dname, rname string, flist []string
 	for key := range fs {
 		buf, err = g.get(g.urlContent(changeNum, revisionNum, key))
 		if err != nil {
-			return "", "", nil, errors.Wrap(err, "failed to content")
+			return "", "", nil, "", errors.Wrap(err, "failed to get content")
 		}
 
-		file := filepath.Base(key) + format.Base64Content
+		file := filepath.Base(key)
 		if key == commitMsg {
-			file = format.Base64Message
+			file = strings.TrimPrefix(commitMsg, "/")
 		}
 
 		err = g.write(filepath.Join(path, filepath.Dir(key)), file, string(buf))
 		if err != nil {
-			return "", "", nil, errors.Wrap(err, "failed to fetch")
+			return "", "", nil, "", errors.Wrap(err, "failed to write content")
 		}
 	}
 
-	// Return files
 	var files []string
 
 	for key := range fs {
 		if key == commitMsg {
-			files = append(files, format.Base64Message)
+			files = append(files, strings.TrimPrefix(commitMsg, "/"))
 		} else {
-			files = append(files, filepath.Join(filepath.Dir(key), filepath.Base(key)+format.Base64Content))
+			files = append(files, filepath.Join(filepath.Dir(key), filepath.Base(key)))
 		}
 	}
 
-	return path, queryRet[0].(map[string]interface{})["project"].(string), files, nil
+	// Get patch
+	buf, err = g.get(g.urlPatch(changeNum, revisionNum))
+	if err != nil {
+		return "", "", nil, "", errors.Wrap(err, "failed to get patch")
+	}
+
+	err = g.write(path, commitPatch, string(buf))
+	if err != nil {
+		return "", "", nil, "", errors.Wrap(err, "failed to write patch")
+	}
+
+	return path, queryRet[0].(map[string]interface{})["project"].(string), files, commitPatch, nil
 }
 
 func (g *gerrit) Query(search string, start int) ([]interface{}, error) {
@@ -189,7 +200,7 @@ func (g *gerrit) Query(search string, start int) ([]interface{}, error) {
 func (g *gerrit) Vote(commit string, data []format.Report, vote config.Vote) error {
 	match := func(data format.Report, diffs []*diff.FileDiff) bool {
 		for _, d := range diffs {
-			if strings.Replace(d.PathNew, pathPrefix, "", 1) != data.File {
+			if strings.Replace(d.PathNew, diffPrefix, "", 1) != data.File {
 				continue
 			}
 			if data.Line <= 0 {

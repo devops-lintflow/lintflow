@@ -16,20 +16,50 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/devops-lintflow/lintflow/format"
 )
 
 const (
-	root = "../tests/gerrit-2021-03-06/21/c5d3440911e06ed4fc60252bd89e7756f9ae67ee"
+	commitPatch = "commit.patch"
 )
 
-func TestMarshal(t *testing.T) {
-	var buf []string
-	var l lint
+func TestEncode(t *testing.T) {
+	l := lint{}
 
-	_, err := l.marshal(root, buf)
-	assert.NotEqual(t, nil, err)
+	name := "lintshell"
+	root := "../tests/project"
+	files := []string{"COMMIT_MSG", "lintshell/test.sh"}
+	patch := commitPatch
 
-	buf = []string{"foo.base64"}
-	_, err = l.marshal(root, buf)
-	assert.NotEqual(t, nil, err)
+	req, err := l.encode(name, root, files, patch)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, name, req.Name)
+	assert.Equal(t, len(files), len(req.LintFiles))
+	assert.Equal(t, patch, req.LintPatch.Path)
+}
+
+func TestDecode(t *testing.T) {
+	l := lint{}
+
+	reply := &LintReply{
+		Name: "lintshell",
+	}
+
+	reply.LintReports = []*LintReport{
+		{
+			File:    "lintshell/test.sh",
+			Line:    1,
+			Type:    format.TypeError,
+			Details: "Disapproved by review",
+		},
+	}
+
+	buf, err := l.decode(reply)
+	assert.Equal(t, nil, err)
+
+	_, ok := buf[reply.Name]
+	assert.Equal(t, true, ok)
+	assert.Equal(t, len(reply.LintReports), len(buf[reply.Name]))
+	assert.Equal(t, reply.LintReports[0].File, buf[reply.Name][0].File)
 }

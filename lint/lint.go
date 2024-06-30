@@ -14,7 +14,6 @@ package lint
 
 import (
 	"context"
-	"encoding/json"
 	"io"
 	"math"
 	"os"
@@ -30,7 +29,7 @@ import (
 )
 
 type Lint interface {
-	Run(context.Context, string, string, []string, func(*config.Filter, string, string) bool) (map[string][]format.Report, error)
+	Run(context.Context, string, string, []string, string, func(*config.Filter, string, string) bool) (map[string][]format.Report, error)
 }
 
 type Config struct {
@@ -51,8 +50,8 @@ func DefaultConfig() *Config {
 	return &Config{}
 }
 
-// nolint:gosec
-func (l *lint) Run(ctx context.Context, root, repo string, files []string,
+// nolint:gocyclo
+func (l *lint) Run(ctx context.Context, root, repo string, files []string, patch string,
 	match func(*config.Filter, string, string) bool) (map[string][]format.Report, error) {
 	helper := func(filter *config.Filter, files []string) []string {
 		var buf []string
@@ -77,23 +76,28 @@ func (l *lint) Run(ctx context.Context, root, repo string, files []string,
 		if len(buf) != 0 {
 			bypass = false
 		}
-		go func(ctx context.Context, f []string, v config.Lint) {
-			if len(f) != 0 {
-				m, e := l.marshal(root, f)
-				if e != nil {
-					ch <- result{nil, errors.Wrap(e, "failed to marshal")}
+		go func(ctx context.Context, lint config.Lint, files []string, patch string) {
+			if len(files) != 0 {
+				req, err := l.encode(lint.Name, root, files, patch)
+				if err != nil {
+					ch <- result{nil, errors.Wrap(err, "failed to encode")}
 					return
 				}
-				r, e := l.routine(ctx, v.Host, v.Port, m)
-				if e != nil {
-					ch <- result{nil, errors.Wrap(e, "failed to routine")}
+				ret, err := l.routine(ctx, lint.Host, lint.Port, req)
+				if err != nil {
+					ch <- result{nil, errors.Wrap(err, "failed to routine")}
 					return
 				}
-				ch <- result{r, nil}
+				rep, err := l.decode(ret)
+				if err != nil {
+					ch <- result{nil, errors.Wrap(err, "failed to decode")}
+					return
+				}
+				ch <- result{rep, nil}
 			} else {
 				ch <- result{map[string][]format.Report{}, nil}
 			}
-		}(ctx, buf, l.cfg.Lints[i])
+		}(ctx, l.cfg.Lints[i], buf, patch)
 	}
 
 	if bypass {
@@ -103,19 +107,19 @@ func (l *lint) Run(ctx context.Context, root, repo string, files []string,
 	ret := map[string][]format.Report{}
 
 	for range l.cfg.Lints {
-		r := <-ch
-		if r.err != nil {
-			return nil, r.err
+		rep := <-ch
+		if rep.err != nil {
+			return nil, rep.err
 		}
-		if len(r.data) != 0 {
-			for k, v := range r.data {
-				if len(v) == 0 {
+		if len(rep.data) != 0 {
+			for name, reports := range rep.data {
+				if len(reports) == 0 {
 					continue
 				}
-				if _, ok := ret[k]; !ok {
-					ret[k] = v
+				if _, ok := ret[name]; !ok {
+					ret[name] = reports
 				} else {
-					ret[k] = append(ret[k], v...)
+					ret[name] = append(ret[name], reports...)
 				}
 			}
 		}
@@ -124,60 +128,7 @@ func (l *lint) Run(ctx context.Context, root, repo string, files []string,
 	return ret, nil
 }
 
-func (l *lint) marshal(root string, data []string) ([]byte, error) {
-	helper := func(name string) (string, error) {
-		fi, err := os.Open(name)
-		if err != nil {
-			return "", errors.Wrap(err, "failed to open")
-		}
-		defer func() { _ = fi.Close() }()
-		buf, err := io.ReadAll(fi)
-		if err != nil {
-			return "", errors.Wrap(err, "failed to readall")
-		}
-		return string(buf), nil
-	}
-
-	var err error
-	buf := map[string]string{}
-
-	for _, val := range data {
-		if val == "" {
-			err = errors.New("invalid data")
-			break
-		}
-		buf[val], err = helper(filepath.Join(root, val))
-		if err != nil {
-			break
-		}
-	}
-
-	if len(buf) == 0 {
-		return nil, errors.New("invalid data")
-	}
-
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to read")
-	}
-
-	ret, err := json.Marshal(buf)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to marshal")
-	}
-
-	return ret, nil
-}
-
-func (l *lint) routine(ctx context.Context, host string, port int, data []byte) (map[string][]format.Report, error) {
-	helper := func(data string) (map[string][]format.Report, error) {
-		var buf map[string][]format.Report
-		if err := json.Unmarshal([]byte(data), &buf); err != nil {
-			return nil, errors.Wrap(err, "failed to unmarshal")
-		}
-		return buf, nil
-	}
-
-	// nolint: staticcheck
+func (l *lint) routine(ctx context.Context, host string, port int, request *LintRequest) (*LintReply, error) {
 	conn, err := grpc.DialContext(ctx, host+":"+strconv.Itoa(port),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithBlock(),
@@ -185,18 +136,81 @@ func (l *lint) routine(ctx context.Context, host string, port int, data []byte) 
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to dial")
 	}
-	defer func() { _ = conn.Close() }()
+
+	defer func() {
+		_ = conn.Close()
+	}()
 
 	client := NewLintProtoClient(conn)
 
-	reply, err := client.SendLint(ctx, &LintRequest{Message: string(data)})
+	reply, err := client.SendLint(ctx, request)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to send")
+		return nil, errors.Wrap(err, "failed to send lint")
 	}
 
-	buf, err := helper(reply.GetMessage())
+	return reply, nil
+}
+
+func (l *lint) encode(lint, root string, files []string, patch string) (*LintRequest, error) {
+	var err error
+
+	helper := func(path string) ([]byte, error) {
+		fi, err := os.Open(path)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to open")
+		}
+		defer func() {
+			_ = fi.Close()
+		}()
+		buf, err := io.ReadAll(fi)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to read")
+		}
+		return buf, nil
+	}
+
+	request := &LintRequest{
+		Name: lint,
+	}
+
+	request.LintFiles = []*LintFile{}
+
+	for _, item := range files {
+		buf := LintFile{Path: item}
+		buf.Content, err = helper(filepath.Join(root, item))
+		if err != nil {
+			break
+		}
+		request.LintFiles = append(request.LintFiles, &buf)
+	}
+
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get")
+		return nil, errors.New("invalid file")
+	}
+
+	request.LintPatch = &LintPatch{}
+	request.LintPatch.Path = patch
+
+	request.LintPatch.Content, err = helper(filepath.Join(root, patch))
+	if err != nil {
+		return nil, errors.New("invalid patch")
+	}
+
+	return request, nil
+}
+
+func (l *lint) decode(reply *LintReply) (map[string][]format.Report, error) {
+	buf := map[string][]format.Report{}
+	name := reply.GetName()
+	reports := reply.GetLintReports()
+
+	for i := range reports {
+		buf[name] = append(buf[name], format.Report{
+			File:    reports[i].GetFile(),
+			Line:    int(reports[i].GetLine()),
+			Type:    reports[i].GetType(),
+			Details: reports[i].GetDetails(),
+		})
 	}
 
 	return buf, nil

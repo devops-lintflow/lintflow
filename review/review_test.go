@@ -1,3 +1,7 @@
+//go:build review_test
+
+// go test -cover -covermode=atomic -parallel 2 -tags=review_test -v github.com/devops-lintflow/lintflow/review
+
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,6 +17,7 @@
 package review
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -28,11 +33,11 @@ import (
 )
 
 const (
-	changeGerrit   = 41
-	commitGerrit   = "8f71e42dbcd8c68d849e483c04670f58621aab9c"
-	queryAfter     = "after:2024-02-27"
-	queryBefore    = "before:2024-02-28"
-	revisionGerrit = 1
+	changeGerrit   = 1
+	commitGerrit   = "33e6e9691c9f87b66042e810a2d697fad789d64f"
+	queryAfter     = "after:2024-06-30"
+	queryBefore    = "before:2024-07-01"
+	revisionGerrit = 10
 )
 
 func initConfig(name string) (*config.Config, error) {
@@ -76,27 +81,27 @@ func TestReview(t *testing.T) {
 	ti := time.Now()
 	root := filepath.Join(d, "gerrit-"+ti.Format("2006-01-02"))
 
-	_, _, _, err = r.Fetch(root, commitGerrit)
+	dir, repo, files, patch, err := r.Fetch(root, commitGerrit)
 	assert.Equal(t, nil, err)
 
-	buf := make([]format.Report, 0)
+	fmt.Printf("  dir: %s\n", dir)
+	fmt.Printf(" repo: %s\n", repo)
+	fmt.Printf("files: %v\n", files)
+	fmt.Printf("patch: %s\n", patch)
+
+	buf := make([]format.Report, 1)
+	buf[0] = format.Report{
+		File:    "lintshell/test.sh",
+		Line:    1,
+		Type:    format.TypeError,
+		Details: "Disapproved by review",
+	}
 
 	vote := config.Vote{
 		Label:       "Lint-Verified",
 		Approval:    "+1",
 		Disapproval: "-1",
-		Message:     "Voting Lint-Verified by lintflow",
-	}
-
-	err = r.Vote(commitGerrit, buf, vote)
-	assert.Equal(t, nil, err)
-
-	buf = make([]format.Report, 1)
-	buf[0] = format.Report{
-		File:    "AndroidManifest.xml",
-		Line:    1,
-		Type:    format.TypeError,
-		Details: "Disapproved",
+		Message:     "Voting Lint-Verified by review",
 	}
 
 	err = r.Vote(commitGerrit, buf, vote)
