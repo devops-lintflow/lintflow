@@ -200,17 +200,26 @@ func (l *lint) encode(lint, root string, files []string, patch string) (*LintReq
 }
 
 func (l *lint) decode(reply *LintReply) (map[string][]format.Report, error) {
-	buf := map[string][]format.Report{}
 	name := reply.GetName()
+	if name == "" {
+		return map[string][]format.Report{}, nil
+	}
+
+	buf := map[string][]format.Report{}
 	reports := reply.GetLintReports()
 
 	for i := range reports {
-		buf[name] = append(buf[name], format.Report{
+		b := format.Report{
 			File:    reports[i].GetFile(),
 			Line:    int(reports[i].GetLine()),
 			Type:    reports[i].GetType(),
 			Details: reports[i].GetDetails(),
-		})
+		}
+		if _, ok := buf[name]; !ok {
+			buf[name] = []format.Report{b}
+		} else {
+			buf[name] = append(buf[name], b)
+		}
 	}
 
 	return buf, nil
