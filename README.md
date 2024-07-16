@@ -174,12 +174,6 @@ spec:
 
 
 
-## Design
-
-![design](design.png)
-
-
-
 ## Project
 
 ```
