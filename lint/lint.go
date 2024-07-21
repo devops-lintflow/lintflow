@@ -113,9 +113,6 @@ func (l *lint) Run(ctx context.Context, root, repo string, files []string, patch
 		}
 		if len(rep.data) != 0 {
 			for name, reports := range rep.data {
-				if len(reports) == 0 {
-					continue
-				}
 				if _, ok := ret[name]; !ok {
 					ret[name] = reports
 				} else {
@@ -205,7 +202,10 @@ func (l *lint) decode(reply *LintReply) (map[string][]format.Report, error) {
 		return map[string][]format.Report{}, nil
 	}
 
-	buf := map[string][]format.Report{}
+	buf := map[string][]format.Report{
+		name: {},
+	}
+
 	reports := reply.GetLintReports()
 
 	for i := range reports {
@@ -215,11 +215,7 @@ func (l *lint) decode(reply *LintReply) (map[string][]format.Report, error) {
 			Type:    reports[i].GetType(),
 			Details: reports[i].GetDetails(),
 		}
-		if _, ok := buf[name]; !ok {
-			buf[name] = []format.Report{b}
-		} else {
-			buf[name] = append(buf[name], b)
-		}
+		buf[name] = append(buf[name], b)
 	}
 
 	return buf, nil
