@@ -99,9 +99,7 @@ spec:
             - .hpp
             - .java
           file:
-            - name
           repo:
-            - name
       vote: AI-Verified
     - name: lintcommit
       host: 127.0.0.1
@@ -125,9 +123,7 @@ spec:
             - .h
             - .hpp
           file:
-            - name
           repo:
-            - name
       vote: Lint-Verified
     - name: lintjava
       host: 127.0.0.1
@@ -138,9 +134,7 @@ spec:
             - .java
             - .xml
           file:
-            - name
           repo:
-            - name
       vote: Lint-Verified
     - name: lintpython
       host: 127.0.0.1
@@ -150,9 +144,7 @@ spec:
           extension:
             - .py
           file:
-            - name
           repo:
-            - name
       vote: Lint-Verified
     - name: lintshell
       host: 127.0.0.1
@@ -162,9 +154,7 @@ spec:
           extension:
             - .sh
           file:
-            - name
           repo:
-            - name
       vote: Lint-Verified
   review:
     name: gerrit
