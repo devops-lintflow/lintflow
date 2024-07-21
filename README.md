@@ -103,6 +103,16 @@ spec:
           repo:
             - name
       vote: AI-Verified
+    - name: lintcommit
+      host: 127.0.0.1
+      port: 9090
+      filter:
+        include:
+          extension:
+          file:
+            - COMMIT_MSG
+          repo:
+      vote: Verified
     - name: lintcpp
       host: 127.0.0.1
       port: 9090
@@ -170,6 +180,10 @@ spec:
         approval: +1
         disapproval: -1
         message: Voting Lint-Verified by lintflow
+      - label: Verified
+        approval: +1
+        disapproval: -1
+        message: Voting Verified by lintflow
 ```
 
 
