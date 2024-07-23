@@ -37,11 +37,8 @@ spec:
       filter:
         include:
           extension:
-            - .c
             - .cc
             - .cpp
-            - .h
-            - .hpp
           file:
           repo:
       vote: Lint-Verified
