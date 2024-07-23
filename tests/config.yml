@@ -15,8 +15,6 @@ spec:
             - .c
             - .cc
             - .cpp
-            - .h
-            - .hpp
             - .java
           file:
           repo:
@@ -27,6 +25,22 @@ spec:
       filter:
         include:
           extension:
+            - .apk
+            - .bin
+            - .c
+            - .cc
+            - .cpp
+            - .dts
+            - .dtsi
+            - .go
+            - .h
+            - .hpp
+            - .java
+            - .json
+            - .py
+            - .sh
+            - .so
+            - .xml
           file:
             - COMMIT_MSG
           repo:
@@ -51,6 +65,36 @@ spec:
             - .java
             - .xml
           file:
+          repo:
+      vote: Lint-Verified
+    - name: lintkernel
+      host: 127.0.0.1
+      port: 9090
+      filter:
+        include:
+          extension:
+            - .c
+          file:
+          repo:
+            - kernel/common
+            - kernel/msm-3.10
+            - kernel/msm-3.18
+            - kernel/msm-4.14
+            - kernel/msm-4.19
+            - kernel/msm-4.4
+            - kernel/msm-4.9
+            - kernel/msm-5.4
+            - kernel/msm-5.10
+            - kernel/msm-5.15
+      vote: Lint-Verified
+    - name: lintmake
+      host: 127.0.0.1
+      port: 9090
+      filter:
+        include:
+          extension:
+          file:
+            - Makefile
           repo:
       vote: Lint-Verified
     - name: lintpython
@@ -88,6 +132,6 @@ spec:
         disapproval: -1
         message: Voting Lint-Verified by lintflow
       - label: Verified
-        approval: +1
+        approval: 0
         disapproval: -1
         message: Voting Verified by lintflow
