@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	commitPatch = "commit.patch"
+	commitPatch = "42-a4bc7bd.patch"
 )
 
 func TestEncode(t *testing.T) {

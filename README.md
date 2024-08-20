@@ -183,7 +183,7 @@ spec:
 ```
 lintwork-20240630231055/
 ├── COMMIT_MSG
-├── commit.patch
+├── {change-number}-{commit-id}.patch
 └── path/to/file
 ```
 

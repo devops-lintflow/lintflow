@@ -17,6 +17,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -49,9 +50,9 @@ const (
 )
 
 const (
-	commitMsg   = "/COMMIT_MSG"
-	commitPatch = "commit.patch"
-	commitQuery = "commit"
+	commitMsg    = "/COMMIT_MSG"
+	commitQuery  = "commit"
+	commitSuffix = "patch"
 )
 
 const (
@@ -98,13 +99,14 @@ func (g *gerrit) Fetch(root, commit string) (dname, rname string, flist []string
 		return "", "", nil, "", errors.Wrap(err, "failed to unmarshalList")
 	}
 
-	revisions := queryRet[0].(map[string]interface{})["revisions"].(map[string]interface{})
-	current := revisions[queryRet[0].(map[string]interface{})["current_revision"].(string)].(map[string]interface{})
-
 	changeNum := int(queryRet[0].(map[string]interface{})["_number"].(float64))
+	commitId := queryRet[0].(map[string]interface{})["current_revision"].(string)
+
+	revisions := queryRet[0].(map[string]interface{})["revisions"].(map[string]interface{})
+	current := revisions[commitId].(map[string]interface{})
 	revisionNum := int(current["_number"].(float64))
 
-	path := filepath.Join(root, strconv.Itoa(changeNum), queryRet[0].(map[string]interface{})["current_revision"].(string))
+	path := filepath.Join(root, strconv.Itoa(changeNum), commitId)
 
 	// Get files
 	buf, err = g.get(g.urlFiles(changeNum, revisionNum))
@@ -154,12 +156,14 @@ func (g *gerrit) Fetch(root, commit string) (dname, rname string, flist []string
 		return "", "", nil, "", errors.Wrap(err, "failed to get patch")
 	}
 
-	err = g.write(path, commitPatch, string(buf))
+	patch := fmt.Sprintf("%d-%s.%s", changeNum, commitId[:7], commitSuffix)
+
+	err = g.write(path, patch, string(buf))
 	if err != nil {
 		return "", "", nil, "", errors.Wrap(err, "failed to write patch")
 	}
 
-	return path, queryRet[0].(map[string]interface{})["project"].(string), files, commitPatch, nil
+	return path, queryRet[0].(map[string]interface{})["project"].(string), files, patch, nil
 }
 
 func (g *gerrit) Query(search string, start int) ([]interface{}, error) {
