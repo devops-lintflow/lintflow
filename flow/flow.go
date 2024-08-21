@@ -81,7 +81,12 @@ func (f *flow) Run(ctx context.Context, commit string) error {
 	for label, reports := range labels {
 		fmt.Printf("   repo: %s\n", repo)
 		fmt.Printf("  label: %s\n", label)
-		fmt.Printf("reports: %v\n", reports)
+		for _, item := range reports {
+			fmt.Printf("file: %s\n", item.File)
+			fmt.Printf("line: %d\n", item.Line)
+			fmt.Printf("type: %s\n", item.Type)
+			fmt.Printf("details: %s\n", item.Details)
+		}
 		if vote := f.buildVote(label); vote.Label != "" {
 			if err := f.cfg.Review.Vote(commit, reports, vote); err != nil {
 				return errors.Wrap(err, "failed to vote reivew")
