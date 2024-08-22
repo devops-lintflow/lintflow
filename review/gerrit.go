@@ -294,6 +294,8 @@ func (g *gerrit) Vote(commit string, data []format.Report, vote config.Vote) err
 
 	// Review commit
 	comments, labels, message := build(data, diffs)
+	fmt.Printf("  labels: %v\n", labels)
+	fmt.Printf(" message: %s\n", message)
 	buf := map[string]interface{}{"comments": comments, "labels": labels, "message": message}
 	if err := g.post(g.urlReview(int(c[0].(map[string]interface{})["_number"].(float64)),
 		int(current["_number"].(float64))), buf); err != nil {
