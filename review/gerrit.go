@@ -234,7 +234,7 @@ func (g *gerrit) Vote(commit string, data []format.Report, vote config.Vote) err
 			if l <= 0 {
 				l = 1
 			}
-			b := map[string]interface{}{"line": l, "message": item.Details, "unresolved": true}
+			b := map[string]interface{}{"line": l, "message": item.Details, "unresolved": false}
 			if _, ok := c[item.File]; !ok {
 				c[item.File] = []map[string]interface{}{b}
 			} else {
