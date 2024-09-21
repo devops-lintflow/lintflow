@@ -34,6 +34,31 @@ import (
 )
 
 const (
+	commitMsg   = "/COMMIT_MSG"
+	commitQuery = "commit"
+)
+
+const (
+	diffBin    = "Binary files differ"
+	diffSep    = "diff --git"
+	diffPrefix = "b/"
+)
+
+const (
+	metaBranch   = "branch"
+	metaOwner    = "owner"
+	metaProject  = "project"
+	metaRevision = "revision"
+	metaUpdated  = "updated"
+	metaUrl      = "url"
+)
+
+const (
+	suffixMeta  = "meta"
+	suffixPatch = "patch"
+)
+
+const (
 	queryLimit   = 1000
 	urlChanges   = "/changes/"
 	urlContent   = "/content"
@@ -49,18 +74,6 @@ const (
 	urlStart     = "&start="
 )
 
-const (
-	commitMsg    = "/COMMIT_MSG"
-	commitQuery  = "commit"
-	commitSuffix = "patch"
-)
-
-const (
-	diffBin    = "Binary files differ"
-	diffSep    = "diff --git"
-	diffPrefix = "b/"
-)
-
 type gerrit struct {
 	r config.Review
 }
@@ -73,8 +86,8 @@ func (g *gerrit) Clean(name string) error {
 	return nil
 }
 
-// nolint:funlen,gocyclo
-func (g *gerrit) Fetch(root, commit string) (dname, rname string, flist []string, pname string, emsg error) {
+// nolint:funlen,gocritic,gocyclo
+func (g *gerrit) Fetch(root, commit string) (dname, rname string, flist []string, mname, pname string, emsg error) {
 	filterFiles := func(data map[string]interface{}) map[string]interface{} {
 		buf := make(map[string]interface{})
 		for key, val := range data {
@@ -89,34 +102,34 @@ func (g *gerrit) Fetch(root, commit string) (dname, rname string, flist []string
 	}
 
 	// Query commit
-	buf, err := g.get(g.urlQuery(commitQuery+":"+commit, []string{"CURRENT_REVISION"}, 0))
+	buf, err := g.get(g.urlQuery(commitQuery+":"+commit, []string{"CURRENT_REVISION", "DETAILED_ACCOUNTS"}, 0))
 	if err != nil {
-		return "", "", nil, "", errors.Wrap(err, "failed to query")
+		return "", "", nil, "", "", errors.Wrap(err, "failed to query")
 	}
 
 	queryRet, err := g.unmarshalList(buf)
 	if err != nil {
-		return "", "", nil, "", errors.Wrap(err, "failed to unmarshalList")
+		return "", "", nil, "", "", errors.Wrap(err, "failed to unmarshalList")
 	}
 
 	changeNum := int(queryRet[0].(map[string]interface{})["_number"].(float64))
-	commitId := queryRet[0].(map[string]interface{})["current_revision"].(string)
+	revision := queryRet[0].(map[string]interface{})["current_revision"].(string)
 
 	revisions := queryRet[0].(map[string]interface{})["revisions"].(map[string]interface{})
-	current := revisions[commitId].(map[string]interface{})
+	current := revisions[revision].(map[string]interface{})
 	revisionNum := int(current["_number"].(float64))
 
-	path := filepath.Join(root, strconv.Itoa(changeNum), commitId)
+	path := filepath.Join(root, strconv.Itoa(changeNum), revision)
 
 	// Get files
 	buf, err = g.get(g.urlFiles(changeNum, revisionNum))
 	if err != nil {
-		return "", "", nil, "", errors.Wrap(err, "failed to get files")
+		return "", "", nil, "", "", errors.Wrap(err, "failed to get files")
 	}
 
 	fs, err := g.unmarshal(buf)
 	if err != nil {
-		return "", "", nil, "", errors.Wrap(err, "failed to unmarshal")
+		return "", "", nil, "", "", errors.Wrap(err, "failed to unmarshal")
 	}
 
 	// Match files
@@ -126,7 +139,7 @@ func (g *gerrit) Fetch(root, commit string) (dname, rname string, flist []string
 	for key := range fs {
 		buf, err = g.get(g.urlContent(changeNum, revisionNum, key))
 		if err != nil {
-			return "", "", nil, "", errors.Wrap(err, "failed to get content")
+			return "", "", nil, "", "", errors.Wrap(err, "failed to get content")
 		}
 
 		file := filepath.Base(key)
@@ -136,7 +149,7 @@ func (g *gerrit) Fetch(root, commit string) (dname, rname string, flist []string
 
 		err = g.write(filepath.Join(path, filepath.Dir(key)), file, string(buf))
 		if err != nil {
-			return "", "", nil, "", errors.Wrap(err, "failed to write content")
+			return "", "", nil, "", "", errors.Wrap(err, "failed to write content")
 		}
 	}
 
@@ -150,25 +163,38 @@ func (g *gerrit) Fetch(root, commit string) (dname, rname string, flist []string
 		}
 	}
 
+	// Get meta
+	buf, err = g.meta(queryRet[0])
+	if err != nil {
+		return "", "", nil, "", "", errors.Wrap(err, "failed to get meta")
+	}
+
+	meta := fmt.Sprintf("%d-%s.%s", changeNum, revision[:7], suffixMeta)
+
+	err = g.write(path, meta, string(buf))
+	if err != nil {
+		return "", "", nil, "", "", errors.Wrap(err, "failed to write meta")
+	}
+
 	// Get patch
 	buf, err = g.get(g.urlPatch(changeNum, revisionNum))
 	if err != nil {
-		return "", "", nil, "", errors.Wrap(err, "failed to get patch")
+		return "", "", nil, "", "", errors.Wrap(err, "failed to get patch")
 	}
 
-	patch := fmt.Sprintf("%d-%s.%s", changeNum, commitId[:7], commitSuffix)
+	patch := fmt.Sprintf("%d-%s.%s", changeNum, revision[:7], suffixPatch)
 
 	err = g.write(path, patch, string(buf))
 	if err != nil {
-		return "", "", nil, "", errors.Wrap(err, "failed to write patch")
+		return "", "", nil, "", "", errors.Wrap(err, "failed to write patch")
 	}
 
-	return path, queryRet[0].(map[string]interface{})["project"].(string), files, patch, nil
+	return path, queryRet[0].(map[string]interface{})["project"].(string), files, meta, patch, nil
 }
 
 func (g *gerrit) Query(search string, start int) ([]interface{}, error) {
 	helper := func(search string, start int) []interface{} {
-		buf, err := g.get(g.urlQuery(search, []string{"CURRENT_REVISION"}, start))
+		buf, err := g.get(g.urlQuery(search, []string{"CURRENT_REVISION", "DETAILED_ACCOUNTS"}, start))
 		if err != nil {
 			return nil
 		}
@@ -249,7 +275,7 @@ func (g *gerrit) Vote(commit string, data []format.Report, vote config.Vote) err
 	}
 
 	// Query commit
-	ret, err := g.get(g.urlQuery(commitQuery+":"+commit, []string{"CURRENT_REVISION"}, 0))
+	ret, err := g.get(g.urlQuery(commitQuery+":"+commit, []string{"CURRENT_REVISION", "DETAILED_ACCOUNTS"}, 0))
 	if err != nil {
 		return errors.Wrap(err, "failed to query")
 	}
@@ -417,6 +443,26 @@ func (g *gerrit) urlReview(change, revision int) string {
 	}
 
 	return buf
+}
+
+func (g *gerrit) meta(_query interface{}) ([]byte, error) {
+	owner := _query.(map[string]interface{})["owner"]
+
+	buf := map[string]string{
+		metaBranch:   _query.(map[string]interface{})["branch"].(string),
+		metaOwner:    owner.(map[string]interface{})["name"].(string),
+		metaProject:  _query.(map[string]interface{})["project"].(string),
+		metaRevision: _query.(map[string]interface{})["current_revision"].(string),
+		metaUpdated:  _query.(map[string]interface{})["updated"].(string),
+		metaUrl:      g.r.Url,
+	}
+
+	ret, err := json.Marshal(buf)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to marshal")
+	}
+
+	return ret, nil
 }
 
 func (g *gerrit) get(_url string) ([]byte, error) {

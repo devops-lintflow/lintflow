@@ -29,7 +29,8 @@ import (
 )
 
 type Lint interface {
-	Run(context.Context, string, string, []string, string, func(*config.Filter, string, string) bool) (map[string][]format.Report, error)
+	Run(context.Context, string, string, []string, string, string,
+		func(*config.Filter, string, string) bool) (map[string][]format.Report, error)
 }
 
 type Config struct {
@@ -51,7 +52,7 @@ func DefaultConfig() *Config {
 }
 
 // nolint:gocyclo
-func (l *lint) Run(ctx context.Context, root, repo string, files []string, patch string,
+func (l *lint) Run(ctx context.Context, root, repo string, files []string, meta, patch string,
 	match func(*config.Filter, string, string) bool) (map[string][]format.Report, error) {
 	helper := func(filter *config.Filter, files []string) []string {
 		var buf []string
@@ -76,9 +77,9 @@ func (l *lint) Run(ctx context.Context, root, repo string, files []string, patch
 		if len(buf) != 0 {
 			bypass = false
 		}
-		go func(ctx context.Context, lint config.Lint, files []string, patch string) {
+		go func(ctx context.Context, lint config.Lint, files []string, meta, patch string) {
 			if len(files) != 0 {
-				req, err := l.encode(lint.Name, root, files, patch)
+				req, err := l.encode(lint.Name, root, files, meta, patch)
 				if err != nil {
 					ch <- result{nil, errors.Wrap(err, "failed to encode")}
 					return
@@ -97,7 +98,7 @@ func (l *lint) Run(ctx context.Context, root, repo string, files []string, patch
 			} else {
 				ch <- result{map[string][]format.Report{}, nil}
 			}
-		}(ctx, l.cfg.Lints[i], buf, patch)
+		}(ctx, l.cfg.Lints[i], buf, meta, patch)
 	}
 
 	if bypass {
@@ -148,7 +149,7 @@ func (l *lint) routine(ctx context.Context, host string, port int, request *Lint
 	return reply, nil
 }
 
-func (l *lint) encode(lint, root string, files []string, patch string) (*LintRequest, error) {
+func (l *lint) encode(lint, root string, files []string, meta, patch string) (*LintRequest, error) {
 	var err error
 
 	helper := func(path string) ([]byte, error) {
@@ -183,6 +184,14 @@ func (l *lint) encode(lint, root string, files []string, patch string) (*LintReq
 
 	if err != nil {
 		return nil, errors.New("invalid file")
+	}
+
+	request.LintMeta = &LintMeta{}
+	request.LintMeta.Path = meta
+
+	request.LintMeta.Content, err = helper(filepath.Join(root, meta))
+	if err != nil {
+		return nil, errors.New("invalid meta")
 	}
 
 	request.LintPatch = &LintPatch{}

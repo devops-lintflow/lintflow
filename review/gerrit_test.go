@@ -59,12 +59,13 @@ func TestFetch(t *testing.T) {
 	d, _ := os.Getwd()
 	root := filepath.Join(d, "gerrit-test-fetch")
 
-	dir, repo, files, patch, err := h.Fetch(root, commitGerrit)
+	dir, repo, files, meta, patch, err := h.Fetch(root, commitGerrit)
 	assert.Equal(t, nil, err)
 
 	fmt.Printf("  dir: %s\n", dir)
 	fmt.Printf(" repo: %s\n", repo)
 	fmt.Printf("files: %v\n", files)
+	fmt.Printf("meta: %s\n", meta)
 	fmt.Printf("patch: %s\n", patch)
 
 	err = h.Clean(root)
@@ -113,6 +114,36 @@ func TestVote(t *testing.T) {
 
 	err := h.Vote(commitGerrit, buf, vote)
 	assert.Equal(t, nil, err)
+}
+
+func TestGetMeta(t *testing.T) {
+	h := initHandle(t)
+
+	data := `{
+		"branch": "main",
+		"owner": {
+			"name": "name"
+		},
+		"project":          "name",
+		"current_revision": "39fe82c424a319e9613126d2ef1c837e114440c5",
+		"updated":          "2024-09-20 07:15:44.639000000"
+	}`
+
+	_query := map[string]interface{}{}
+	err := json.Unmarshal([]byte(data), &_query)
+
+	_meta, err := h.meta(_query)
+	assert.Equal(t, nil, err)
+
+	buf := map[string]interface{}{}
+	err = json.Unmarshal(_meta, &buf)
+
+	assert.Equal(t, nil, err)
+	assert.Equal(t, _query["branch"], buf[metaBranch])
+	assert.Equal(t, _query["owner"].(map[string]interface{})["name"].(string), buf[metaOwner])
+	assert.Equal(t, _query["project"], buf[metaProject])
+	assert.Equal(t, _query["current_revision"], buf[metaRevision])
+	assert.Equal(t, _query["updated"], buf[metaUpdated])
 }
 
 func TestGetContent(t *testing.T) {

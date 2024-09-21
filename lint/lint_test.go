@@ -21,6 +21,7 @@ import (
 )
 
 const (
+	commitMeta  = "42-a4bc7bd.meta"
 	commitPatch = "42-a4bc7bd.patch"
 )
 
@@ -30,12 +31,14 @@ func TestEncode(t *testing.T) {
 	name := "lintshell"
 	root := "../tests/project"
 	files := []string{"COMMIT_MSG", "lintshell/test.sh"}
+	meta := commitMeta
 	patch := commitPatch
 
-	req, err := l.encode(name, root, files, patch)
+	req, err := l.encode(name, root, files, meta, patch)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, name, req.Name)
 	assert.Equal(t, len(files), len(req.LintFiles))
+	assert.Equal(t, meta, req.LintMeta.Path)
 	assert.Equal(t, patch, req.LintPatch.Path)
 }
 

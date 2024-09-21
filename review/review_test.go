@@ -33,11 +33,11 @@ import (
 )
 
 const (
-	changeGerrit   = 1
-	commitGerrit   = "33e6e9691c9f87b66042e810a2d697fad789d64f"
-	queryAfter     = "after:2024-06-30"
-	queryBefore    = "before:2024-07-01"
-	revisionGerrit = 10
+	changeGerrit   = 42
+	commitGerrit   = "aed052e8b66810795d3a894a9095db41e5854b70"
+	queryAfter     = "after:2024-08-01"
+	queryBefore    = "before:2024-09-01"
+	revisionGerrit = 72
 )
 
 func initConfig(name string) (*config.Config, error) {
@@ -81,12 +81,13 @@ func TestReview(t *testing.T) {
 	ti := time.Now()
 	root := filepath.Join(d, "gerrit-"+ti.Format("2006-01-02"))
 
-	dir, repo, files, patch, err := r.Fetch(root, commitGerrit)
+	dir, repo, files, meta, patch, err := r.Fetch(root, commitGerrit)
 	assert.Equal(t, nil, err)
 
 	fmt.Printf("  dir: %s\n", dir)
 	fmt.Printf(" repo: %s\n", repo)
 	fmt.Printf("files: %v\n", files)
+	fmt.Printf("meta: %s\n", meta)
 	fmt.Printf("patch: %s\n", patch)
 
 	buf := make([]format.Report, 1)

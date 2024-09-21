@@ -11,10 +11,16 @@ service LintProto {
 message LintRequest {
   string name = 1;
   repeated LintFile lintFiles = 2;
-  LintPatch lintPatch = 3;
+  LintMeta lintMeta = 3;
+  LintPatch lintPatch = 4;
 }
 
 message LintFile {
+  string path = 1;
+  bytes content = 2;
+}
+
+message LintMeta {
   string path = 1;
   bytes content = 2;
 }

@@ -180,11 +180,27 @@ spec:
 
 ## Project
 
+- **Commit Files**
+
 ```
 lintwork-20240630231055/
 ├── COMMIT_MSG
+├── {change-number}-{commit-id}.meta
 ├── {change-number}-{commit-id}.patch
 └── path/to/file
+```
+
+- **Commit Meta**
+
+```json
+{
+  "branch": "main",
+  "owner": "name",
+  "project": "name",
+  "revision": "39fe82c424a319e9613126d2ef1c837e114440c5",
+  "updated": "2024-09-20 07:15:44.639000000",
+  "url": "http://127.0.0.1:8080"
+}
 ```
 
 

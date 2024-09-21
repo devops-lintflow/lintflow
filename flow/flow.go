@@ -57,7 +57,7 @@ func (f *flow) Run(ctx context.Context, commit string) error {
 
 	root := filepath.Join(d, "gerrit-"+t.Format("2006-01-02"))
 
-	dir, repo, files, patch, err := f.cfg.Review.Fetch(root, commit)
+	dir, repo, files, meta, patch, err := f.cfg.Review.Fetch(root, commit)
 
 	defer func() {
 		_ = f.cfg.Review.Clean(root)
@@ -67,7 +67,7 @@ func (f *flow) Run(ctx context.Context, commit string) error {
 		return errors.Wrap(err, "failed to clean reivew")
 	}
 
-	buf, err := f.cfg.Lint.Run(ctx, dir, repo, files, patch, f.matchFilter)
+	buf, err := f.cfg.Lint.Run(ctx, dir, repo, files, meta, patch, f.matchFilter)
 	if err != nil {
 		return errors.Wrap(err, "failed to run lint")
 	}
