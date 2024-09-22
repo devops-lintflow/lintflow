@@ -462,7 +462,10 @@ func (g *gerrit) meta(_query interface{}) ([]byte, error) {
 		return nil, errors.Wrap(err, "failed to marshal")
 	}
 
-	return ret, nil
+	dst := make([]byte, base64.StdEncoding.EncodedLen(len(ret)))
+	base64.StdEncoding.Encode(dst, ret)
+
+	return dst, nil
 }
 
 func (g *gerrit) get(_url string) ([]byte, error) {

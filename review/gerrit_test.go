@@ -135,8 +135,11 @@ func TestGetMeta(t *testing.T) {
 	_meta, err := h.meta(_query)
 	assert.Equal(t, nil, err)
 
+	dst := make([]byte, base64.StdEncoding.DecodedLen(len(_meta)))
+	n, _ := base64.StdEncoding.Decode(dst, _meta)
+
 	buf := map[string]interface{}{}
-	err = json.Unmarshal(_meta, &buf)
+	err = json.Unmarshal(dst[:n], &buf)
 
 	assert.Equal(t, nil, err)
 	assert.Equal(t, _query["branch"], buf[metaBranch])

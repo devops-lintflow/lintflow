@@ -127,9 +127,8 @@ func (l *lint) Run(ctx context.Context, root, repo string, files []string, meta,
 }
 
 func (l *lint) routine(ctx context.Context, host string, port int, request *LintRequest) (*LintReply, error) {
-	conn, err := grpc.DialContext(ctx, host+":"+strconv.Itoa(port),
+	conn, err := grpc.NewClient(host+":"+strconv.Itoa(port),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithBlock(),
 		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(math.MaxInt32), grpc.MaxCallSendMsgSize(math.MaxInt32)))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to dial")
