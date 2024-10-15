@@ -102,7 +102,7 @@ func (g *gerrit) Fetch(root, commit string) (dname, rname string, flist []string
 	}
 
 	// Query commit
-	buf, err := g.get(g.urlQuery(commitQuery+":"+commit, []string{"CURRENT_REVISION", "DETAILED_ACCOUNTS"}, 0))
+	buf, err := g.get(g.urlQuery(commitQuery+":"+commit, []string{"ALL_REVISIONS", "DETAILED_ACCOUNTS"}, 0))
 	if err != nil {
 		return "", "", nil, "", "", errors.Wrap(err, "failed to query")
 	}
@@ -113,13 +113,12 @@ func (g *gerrit) Fetch(root, commit string) (dname, rname string, flist []string
 	}
 
 	changeNum := int(queryRet[0].(map[string]interface{})["_number"].(float64))
-	revision := queryRet[0].(map[string]interface{})["current_revision"].(string)
 
 	revisions := queryRet[0].(map[string]interface{})["revisions"].(map[string]interface{})
-	current := revisions[revision].(map[string]interface{})
+	current := revisions[commit].(map[string]interface{})
 	revisionNum := int(current["_number"].(float64))
 
-	path := filepath.Join(root, strconv.Itoa(changeNum), revision)
+	path := filepath.Join(root, strconv.Itoa(changeNum), commit)
 
 	// Get files
 	buf, err = g.get(g.urlFiles(changeNum, revisionNum))
@@ -164,12 +163,12 @@ func (g *gerrit) Fetch(root, commit string) (dname, rname string, flist []string
 	}
 
 	// Get meta
-	buf, err = g.meta(queryRet[0])
+	buf, err = g.meta(commit, queryRet[0])
 	if err != nil {
 		return "", "", nil, "", "", errors.Wrap(err, "failed to get meta")
 	}
 
-	meta := fmt.Sprintf("%d-%s.%s", changeNum, revision[:7], suffixMeta)
+	meta := fmt.Sprintf("%d-%s.%s", changeNum, commit[:7], suffixMeta)
 
 	err = g.write(path, meta, string(buf))
 	if err != nil {
@@ -182,7 +181,7 @@ func (g *gerrit) Fetch(root, commit string) (dname, rname string, flist []string
 		return "", "", nil, "", "", errors.Wrap(err, "failed to get patch")
 	}
 
-	patch := fmt.Sprintf("%d-%s.%s", changeNum, revision[:7], suffixPatch)
+	patch := fmt.Sprintf("%d-%s.%s", changeNum, commit[:7], suffixPatch)
 
 	err = g.write(path, patch, string(buf))
 	if err != nil {
@@ -194,7 +193,7 @@ func (g *gerrit) Fetch(root, commit string) (dname, rname string, flist []string
 
 func (g *gerrit) Query(search string, start int) ([]interface{}, error) {
 	helper := func(search string, start int) []interface{} {
-		buf, err := g.get(g.urlQuery(search, []string{"CURRENT_REVISION", "DETAILED_ACCOUNTS"}, start))
+		buf, err := g.get(g.urlQuery(search, []string{"ALL_REVISIONS", "DETAILED_ACCOUNTS"}, start))
 		if err != nil {
 			return nil
 		}
@@ -275,7 +274,7 @@ func (g *gerrit) Vote(commit string, data []format.Report, vote config.Vote) err
 	}
 
 	// Query commit
-	ret, err := g.get(g.urlQuery(commitQuery+":"+commit, []string{"CURRENT_REVISION", "DETAILED_ACCOUNTS"}, 0))
+	ret, err := g.get(g.urlQuery(commitQuery+":"+commit, []string{"ALL_REVISIONS", "DETAILED_ACCOUNTS"}, 0))
 	if err != nil {
 		return errors.Wrap(err, "failed to query")
 	}
@@ -286,10 +285,11 @@ func (g *gerrit) Vote(commit string, data []format.Report, vote config.Vote) err
 	}
 
 	revisions := c[0].(map[string]interface{})["revisions"].(map[string]interface{})
-	current := revisions[c[0].(map[string]interface{})["current_revision"].(string)].(map[string]interface{})
+	current := revisions[commit].(map[string]interface{})
+	revisionNum := int(current["_number"].(float64))
 
 	// Get patch
-	ret, err = g.get(g.urlPatch(int(c[0].(map[string]interface{})["_number"].(float64)), int(current["_number"].(float64))))
+	ret, err = g.get(g.urlPatch(int(c[0].(map[string]interface{})["_number"].(float64)), revisionNum))
 	if err != nil {
 		return errors.Wrap(err, "failed to patch")
 	}
@@ -323,8 +323,7 @@ func (g *gerrit) Vote(commit string, data []format.Report, vote config.Vote) err
 	fmt.Printf("  labels: %v\n", labels)
 	fmt.Printf(" message: %s\n", message)
 	buf := map[string]interface{}{"comments": comments, "labels": labels, "message": message}
-	if err := g.post(g.urlReview(int(c[0].(map[string]interface{})["_number"].(float64)),
-		int(current["_number"].(float64))), buf); err != nil {
+	if err := g.post(g.urlReview(int(c[0].(map[string]interface{})["_number"].(float64)), revisionNum), buf); err != nil {
 		return errors.Wrap(err, "failed to review")
 	}
 
@@ -445,14 +444,14 @@ func (g *gerrit) urlReview(change, revision int) string {
 	return buf
 }
 
-func (g *gerrit) meta(_query interface{}) ([]byte, error) {
+func (g *gerrit) meta(revision string, _query interface{}) ([]byte, error) {
 	owner := _query.(map[string]interface{})["owner"]
 
 	buf := map[string]string{
 		metaBranch:   _query.(map[string]interface{})["branch"].(string),
 		metaOwner:    owner.(map[string]interface{})["name"].(string),
 		metaProject:  _query.(map[string]interface{})["project"].(string),
-		metaRevision: _query.(map[string]interface{})["current_revision"].(string),
+		metaRevision: revision,
 		metaUpdated:  _query.(map[string]interface{})["updated"].(string),
 		metaUrl:      g.r.Url,
 	}

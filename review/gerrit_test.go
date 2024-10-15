@@ -119,20 +119,21 @@ func TestVote(t *testing.T) {
 func TestGetMeta(t *testing.T) {
 	h := initHandle(t)
 
+	commit := "39fe82c424a319e9613126d2ef1c837e114440c5"
+
 	data := `{
 		"branch": "main",
 		"owner": {
 			"name": "name"
 		},
-		"project":          "name",
-		"current_revision": "39fe82c424a319e9613126d2ef1c837e114440c5",
-		"updated":          "2024-09-20 07:15:44.639000000"
+		"project": "name",
+		"updated": "2024-09-20 07:15:44.639000000"
 	}`
 
 	_query := map[string]interface{}{}
 	err := json.Unmarshal([]byte(data), &_query)
 
-	_meta, err := h.meta(_query)
+	_meta, err := h.meta(commit, _query)
 	assert.Equal(t, nil, err)
 
 	dst := make([]byte, base64.StdEncoding.DecodedLen(len(_meta)))
@@ -145,7 +146,7 @@ func TestGetMeta(t *testing.T) {
 	assert.Equal(t, _query["branch"], buf[metaBranch])
 	assert.Equal(t, _query["owner"].(map[string]interface{})["name"].(string), buf[metaOwner])
 	assert.Equal(t, _query["project"], buf[metaProject])
-	assert.Equal(t, _query["current_revision"], buf[metaRevision])
+	assert.Equal(t, commit, buf[metaRevision])
 	assert.Equal(t, _query["updated"], buf[metaUpdated])
 }
 
@@ -210,10 +211,10 @@ func TestGetPatch(t *testing.T) {
 func TestGetQuery(t *testing.T) {
 	h := initHandle(t)
 
-	_, err := h.get(h.urlQuery("commit:-1", []string{"CURRENT_REVISION"}, 0))
+	_, err := h.get(h.urlQuery("commit:-1", []string{"ALL_REVISIONS"}, 0))
 	assert.NotEqual(t, nil, err)
 
-	buf, err := h.get(h.urlQuery("commit:"+commitGerrit, []string{"CURRENT_REVISION"}, 0))
+	buf, err := h.get(h.urlQuery("commit:"+commitGerrit, []string{"ALL_REVISIONS"}, 0))
 	assert.Equal(t, nil, err)
 
 	_, err = h.unmarshalList(buf)
