@@ -25,6 +25,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/reviewdog/reviewdog/diff"
@@ -102,7 +103,7 @@ func (g *gerrit) Fetch(root, commit string) (dname, rname string, flist []string
 	}
 
 	// Query commit
-	buf, err := g.get(g.urlQuery(commitQuery+":"+commit, []string{"ALL_REVISIONS", "DETAILED_ACCOUNTS"}, 0))
+	buf, err := g.get(g.urlQuery(commitQuery+":"+commit, []string{"ALL_COMMITS", "ALL_REVISIONS", "DETAILED_ACCOUNTS"}, 0))
 	if err != nil {
 		return "", "", nil, "", "", errors.Wrap(err, "failed to query")
 	}
@@ -444,15 +445,37 @@ func (g *gerrit) urlReview(change, revision int) string {
 	return buf
 }
 
-func (g *gerrit) meta(revision string, _query interface{}) ([]byte, error) {
+func (g *gerrit) meta(rev string, _query interface{}) ([]byte, error) {
+	helper := func(offset int) string {
+		sign := "+"
+		if offset < 0 {
+			sign = "-"
+			offset = -offset
+		}
+		hours := offset / 60
+		minutes := offset % 60
+		return fmt.Sprintf("%s%02d:%02d", sign, hours, minutes)
+	}
+
 	owner := _query.(map[string]interface{})["owner"]
+	updated := _query.(map[string]interface{})["updated"].(string)
+
+	revisions := _query.(map[string]interface{})["revisions"]
+	revision := revisions.(map[string]interface{})[rev]
+	commit := revision.(map[string]interface{})["commit"]
+	committer := commit.(map[string]interface{})["committer"]
+	tz := committer.(map[string]interface{})["tz"].(float64)
+
+	date, _ := time.Parse(time.DateTime, updated)
+	updated = fmt.Sprintf("%d-%d-%dT%d:%d:%d%s", date.Year(), date.Month(), date.Day(),
+		date.Hour(), date.Minute(), date.Second(), helper(int(tz)))
 
 	buf := map[string]string{
 		metaBranch:   _query.(map[string]interface{})["branch"].(string),
 		metaOwner:    owner.(map[string]interface{})["name"].(string),
 		metaProject:  _query.(map[string]interface{})["project"].(string),
-		metaRevision: revision,
-		metaUpdated:  _query.(map[string]interface{})["updated"].(string),
+		metaRevision: rev,
+		metaUpdated:  updated,
 		metaUrl:      g.r.Url,
 	}
 
