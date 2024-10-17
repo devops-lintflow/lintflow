@@ -195,9 +195,15 @@ lintwork-20240630231055/
 ```json
 {
   "branch": "main",
-  "owner": "name",
+  "owner": {
+    "name": "name"
+  },
   "project": "name",
-  "revision": "39fe82c424a319e9613126d2ef1c837e114440c5",
+  "revisions": {
+    "39fe82c424a319e9613126d2ef1c837e114440c5": {
+      "_number": 1
+    }
+  },
   "updated": "2024-09-20T07:15:44+08:00",
   "url": "http://127.0.0.1:8080"
 }

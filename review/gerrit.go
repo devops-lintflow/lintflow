@@ -46,12 +46,14 @@ const (
 )
 
 const (
-	metaBranch   = "branch"
-	metaOwner    = "owner"
-	metaProject  = "project"
-	metaRevision = "revision"
-	metaUpdated  = "updated"
-	metaUrl      = "url"
+	metaBranch    = "branch"
+	metaName      = "name"
+	metaNumber    = "_number"
+	metaOwner     = "owner"
+	metaProject   = "project"
+	metaRevisions = "revisions"
+	metaUpdated   = "updated"
+	metaUrl       = "url"
 )
 
 const (
@@ -459,9 +461,10 @@ func (g *gerrit) meta(rev string, _query interface{}) ([]byte, error) {
 
 	owner := _query.(map[string]interface{})["owner"]
 	updated := _query.(map[string]interface{})["updated"].(string)
-
 	revisions := _query.(map[string]interface{})["revisions"]
+
 	revision := revisions.(map[string]interface{})[rev]
+	number := revision.(map[string]interface{})["_number"].(float64)
 	commit := revision.(map[string]interface{})["commit"]
 	committer := commit.(map[string]interface{})["committer"]
 	tz := committer.(map[string]interface{})["tz"].(float64)
@@ -470,13 +473,19 @@ func (g *gerrit) meta(rev string, _query interface{}) ([]byte, error) {
 	updated = fmt.Sprintf("%d-%d-%dT%d:%d:%d%s", date.Year(), date.Month(), date.Day(),
 		date.Hour(), date.Minute(), date.Second(), helper(int(tz)))
 
-	buf := map[string]string{
-		metaBranch:   _query.(map[string]interface{})["branch"].(string),
-		metaOwner:    owner.(map[string]interface{})["name"].(string),
-		metaProject:  _query.(map[string]interface{})["project"].(string),
-		metaRevision: rev,
-		metaUpdated:  updated,
-		metaUrl:      g.r.Url,
+	buf := map[string]interface{}{
+		metaBranch: _query.(map[string]interface{})["branch"].(string),
+		metaOwner: map[string]string{
+			metaName: owner.(map[string]interface{})["name"].(string),
+		},
+		metaProject: _query.(map[string]interface{})["project"].(string),
+		metaRevisions: map[string]interface{}{
+			rev: map[string]interface{}{
+				metaNumber: int(number),
+			},
+		},
+		metaUpdated: updated,
+		metaUrl:     g.r.Url,
 	}
 
 	ret, err := json.Marshal(buf)

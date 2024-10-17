@@ -120,6 +120,7 @@ func TestGetMeta(t *testing.T) {
 	h := initHandle(t)
 
 	commit := "39fe82c424a319e9613126d2ef1c837e114440c5"
+	number := 1
 
 	data := `{
 		"branch": "main",
@@ -130,6 +131,7 @@ func TestGetMeta(t *testing.T) {
 		"updated": "2024-09-20 07:15:44.639000000",
 		"revisions": {
 			"39fe82c424a319e9613126d2ef1c837e114440c5": {
+				"_number": 1,
 				"commit": {
 					"committer": {
 						"tz": -480
@@ -153,10 +155,14 @@ func TestGetMeta(t *testing.T) {
 
 	assert.Equal(t, nil, err)
 	assert.Equal(t, _query["branch"], buf[metaBranch])
-	assert.Equal(t, _query["owner"].(map[string]interface{})["name"].(string), buf[metaOwner])
+	assert.Equal(t, _query["owner"].(map[string]interface{})["name"].(string), buf[metaOwner].(map[string]interface{})[metaName])
 	assert.Equal(t, _query["project"], buf[metaProject])
-	assert.Equal(t, commit, buf[metaRevision])
 	assert.NotEqual(t, "", buf[metaUpdated])
+
+	_, ok := buf[metaRevisions].(map[string]interface{})[commit]
+	assert.Equal(t, true, ok)
+
+	assert.Equal(t, number, int(buf[metaRevisions].(map[string]interface{})[commit].(map[string]interface{})[metaNumber].(float64)))
 }
 
 func TestGetContent(t *testing.T) {
