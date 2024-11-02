@@ -470,7 +470,7 @@ func (g *gerrit) meta(rev string, _query interface{}) ([]byte, error) {
 	tz := committer.(map[string]interface{})["tz"].(float64)
 
 	date, _ := time.Parse(time.DateTime, updated)
-	updated = fmt.Sprintf("%d-%d-%dT%d:%d:%d%s", date.Year(), date.Month(), date.Day(),
+	updated = fmt.Sprintf("%04d-%02d-%02dT%02d:%02d:%02d%s", date.Year(), date.Month(), date.Day(),
 		date.Hour(), date.Minute(), date.Second(), helper(int(tz)))
 
 	buf := map[string]interface{}{
